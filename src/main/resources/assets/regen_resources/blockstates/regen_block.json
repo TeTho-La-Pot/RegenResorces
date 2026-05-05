@@ -1,0 +1,15 @@
+{
+  "variants": {
+    "visual=mimic": { "model": "regen_resources:block/regen_visual_mimic" },
+    "visual=stone": { "model": "regen_resources:block/regen_preset" },
+    "visual=deepslate": { "model": "regen_resources:block/d_regen_preset" },
+    "visual=nether": { "model": "regen_resources:block/n_regen_preset" },
+    "visual=end": { "model": "regen_resources:block/e_regen_preset" },
+    "visual=debris": { "model": "regen_resources:block/debris_regen_preset" },
+    "visual=stone_preset": { "model": "regen_resources:block/regen_preset" },
+    "visual=deepslate_preset": { "model": "regen_resources:block/d_regen_preset" },
+    "visual=nether_preset": { "model": "regen_resources:block/n_regen_preset" },
+    "visual=end_preset": { "model": "regen_resources:block/e_regen_preset" },
+    "visual=debris_preset": { "model": "regen_resources:block/debris_regen_preset" }
+  }
+}

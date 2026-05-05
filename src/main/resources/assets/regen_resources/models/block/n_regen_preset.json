@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "regen_resources:block/nether_regen_ore"
+  }
+}

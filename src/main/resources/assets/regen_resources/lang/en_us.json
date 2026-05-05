@@ -1,0 +1,18 @@
+{
+  "block.regen_resources.regen_block": "Regenerating Ore",
+  "config.jade.plugin_regen_resources.regen_info": "Regeneration block info",
+  "config.jade.plugin_regen_resources.regen_eligible": "Regeneration-eligible blocks",
+  "creativetab.regen_resources_tab": "Regen Resources",
+  "item.regen_resources.break_stuff": "Break Stuff",
+  "item.regen_resources.ancient_fragment": "Ancient Fragment",
+  "jade.regen_resources.time_remaining": "Regen: %s s left",
+  "jade.regen_resources.target": "Restores: %s",
+  "jade.regen_resources.regen_eligible": "Regeneration possible",
+  "tooltip.regen_resources.break_stuff_on": "Removal tool: ON",
+  "tooltip.regen_resources.break_stuff_off": "Removal tool: OFF",
+  "tooltip.regen_resources.break_stuff_description": "Sneak + use to toggle. With removal ON, break the regenerating ore with it in either hand.",
+  "tooltip.regen_resources.time_remaining": "%s s until restore",
+  "regen_resources.regen": "Cooldown: %s",
+  "regen_resources.can_regen": "Regenerate: %s",
+  "regen_resources.regen_block": "Block: %s"
+}

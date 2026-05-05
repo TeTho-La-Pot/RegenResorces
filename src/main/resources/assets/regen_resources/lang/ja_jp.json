@@ -1,0 +1,18 @@
+{
+  "block.regen_resources.regen_block": "再生中の鉱石",
+  "config.jade.plugin_regen_resources.regen_info": "再生ブロックの情報",
+  "config.jade.plugin_regen_resources.regen_eligible": "再生可能ブロックの表示",
+  "creativetab.regen_resources_tab": "Regen Resources",
+  "item.regen_resources.break_stuff": "破壊装置",
+  "item.regen_resources.ancient_fragment": "古代の破片",
+  "jade.regen_resources.time_remaining": "再生まで　%s秒",
+  "jade.regen_resources.target": "復元先: %s",
+  "jade.regen_resources.regen_eligible": "再生可能",
+  "tooltip.regen_resources.break_stuff_on": "除去ツール: ON",
+  "tooltip.regen_resources.break_stuff_off": "除去ツール: OFF",
+  "tooltip.regen_resources.break_stuff_description": "スニーク＋使用でモード切替。再生中の鉱石の除去はON時、利き手どちらに持っても除去可能。",
+  "tooltip.regen_resources.time_remaining": "復元まで %s 秒",
+  "regen_resources.regen": "クールタイム: %s",
+  "regen_resources.can_regen": "再生: %s",
+  "regen_resources.regen_block": "ブロック: %s"
+}

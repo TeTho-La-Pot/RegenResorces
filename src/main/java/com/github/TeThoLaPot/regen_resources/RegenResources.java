@@ -1,40 +1,52 @@
 package com.github.TeThoLaPot.regen_resources;
 
-import com.github.TeThoLaPot.regen_resources.init.block.RegenBlocks;
-import com.github.TeThoLaPot.tt_core.TT_core;
-import com.github.TeThoLaPot.tt_core.api.TTDataBank;
-import com.github.TeThoLaPot.tt_core.api.TTDataUtils;
+import com.github.TeThoLaPot.regen_resources.core.RegenPersistentTaskRegistration;
+import com.github.TeThoLaPot.regen_resources.init.Re_Tabs;
+import com.github.TeThoLaPot.regen_resources.init.block.Re_Blocks;
+import com.github.TeThoLaPot.regen_resources.init.entity.BlockEntities;
+import com.github.TeThoLaPot.regen_resources.init.item.Re_Items;
+import com.github.TeThoLaPot.regen_resources.recipe.ReLootModifiers;
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
-@Mod(RegenResources.MOD_ID)
+/**
+ * Forge ブートストラップ（NeoForge は同等のモッドクラスへ差し替え）。
+ * ゲームプレイイベントは {@link com.github.TeThoLaPot.regen_resources.forge.RegenGameplayEvents}。
+ */
+@Mod(RegenConstants.MOD_ID)
 public class RegenResources {
-    // MOD IDを他から参照できるように public に
-    public static final String MOD_ID = "regen_resources";
+
+    /** 互換参照用（{@link RegenConstants#MOD_ID} と同じ）。 */
+    public static final String MOD_ID = RegenConstants.MOD_ID;
+
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public RegenResources() {
-        TTDataBank.registerExecutor("regen_process", (level, data) -> {
-            BlockPos pos = TTDataUtils.getBlockPos(data, "pos");
-            BlockState state = TTDataUtils.getBlockState(data, "state");
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+        Re_Blocks.BLOCKS.register(modEventBus);
+        BlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        Re_Items.register(modEventBus);
+        Re_Tabs.CREATIVE_MODE_TABS.register(modEventBus);
+        ReLootModifiers.register(modEventBus);
 
-            // 現在の場所が「RegenBlock（再生待ちブロック）」であることを確認してから再生
-            if (level.getBlockState(pos).getBlock() instanceof RegenBlocks) {
-                level.setBlock(pos, state, 3);
-                // 再生が完了したので、API側の座標データもクリーンアップ
-                TT_core.removeBlockData(level, pos);
+        modEventBus.addListener((ModConfigEvent e) -> {
+            if (!MOD_ID.equals(e.getConfig().getModId())) {
+                return;
+            }
+            if (e instanceof ModConfigEvent.Loading || e instanceof ModConfigEvent.Reloading) {
+                Config.invalidateEntryCache();
             }
         });
 
+        RegenPersistentTaskRegistration.registerExecutors();
 
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-        MinecraftForge.EVENT_BUS.register(this);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "RegenResources/regen-resources-common.toml");
+        LOGGER.info("RegenResources (Forge bootstrap)");
     }
 }
-

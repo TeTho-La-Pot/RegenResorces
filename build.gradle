@@ -1,3 +1,7 @@
+/*
+ * NeoForge 対応: Forge 専用は forge/ と client/（MOD バス）に集約。
+ * core.RegenPersistentTaskRegistration は TT_Core 連携のみでローダー非依存に近い。
+ */
 plugins {
     id 'eclipse'
     id 'idea'
@@ -31,7 +35,7 @@ minecraft {
         configureEach {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
+            property 'forge.logging.console.level', 'info'
 
             mods {
                 // 【修正】直接指定
@@ -42,7 +46,6 @@ minecraft {
         }
 
         client {
-            // 【修正】mod_id を使っている箇所をすべて "regen_resources" に置換
             property 'forge.enabledGameTestNamespaces', mod_id
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
@@ -50,6 +53,13 @@ minecraft {
 
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
+        }
+
+        clientDebug {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'
         }
 
         data {
@@ -68,6 +78,7 @@ sourceSets {
 }
 
 repositories {
+    mavenLocal()
     maven {
         url "https://www.cursemaven.com"
         content { includeGroup "curse.maven" }
@@ -87,7 +98,7 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("curse.maven:jade-324717:5876199")
-    implementation fg.deobf("com.github.TeThoLaPot:tt_core:1.0")
+    implementation fg.deobf("com.github.TeThoLaPot:tt_core:${tt_core_version}")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
