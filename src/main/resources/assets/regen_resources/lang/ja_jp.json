@@ -10,7 +10,7 @@
   "jade.regen_resources.regen_eligible": "再生可能",
   "tooltip.regen_resources.break_stuff_on": "除去ツール: ON",
   "tooltip.regen_resources.break_stuff_off": "除去ツール: OFF",
-  "tooltip.regen_resources.break_stuff_description": "スニーク＋使用でモード切替。再生中の鉱石の除去はON時、利き手どちらに持っても除去可能。",
+  "tooltip.regen_resources.break_stuff_description": "スニーク＋使用でモード切替。ONのときはメインまたはオフハンドに装置を持った状態で再生中の鉱石を破壊すると除去できる。",
   "tooltip.regen_resources.time_remaining": "復元まで %s 秒",
   "regen_resources.regen": "クールタイム: %s",
   "regen_resources.can_regen": "再生: %s",

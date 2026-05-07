@@ -1,3 +1,16 @@
 {
-  "parent": "regen_resources:block/regen_preset"
+  "parent": "regen_resources:block/regen_preset",
+  "overrides": [
+    { "predicate": { "regen_resources:regen_visual": 0 }, "model": "regen_resources:block/regen_visual_mimic" },
+    { "predicate": { "regen_resources:regen_visual": 1 }, "model": "regen_resources:block/regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 2 }, "model": "regen_resources:block/d_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 3 }, "model": "regen_resources:block/n_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 4 }, "model": "regen_resources:block/e_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 5 }, "model": "regen_resources:block/debris_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 6 }, "model": "regen_resources:block/regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 7 }, "model": "regen_resources:block/d_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 8 }, "model": "regen_resources:block/n_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 9 }, "model": "regen_resources:block/e_regen_preset" },
+    { "predicate": { "regen_resources:regen_visual": 10 }, "model": "regen_resources:block/debris_regen_preset" }
+  ]
 }

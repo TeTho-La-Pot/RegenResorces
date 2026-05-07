@@ -10,7 +10,7 @@
   "jade.regen_resources.regen_eligible": "Regeneration possible",
   "tooltip.regen_resources.break_stuff_on": "Removal tool: ON",
   "tooltip.regen_resources.break_stuff_off": "Removal tool: OFF",
-  "tooltip.regen_resources.break_stuff_description": "Sneak + use to toggle. With removal ON, break the regenerating ore with it in either hand.",
+  "tooltip.regen_resources.break_stuff_description": "Sneak + use to toggle. With removal ON, mine the regenerating ore while holding this in your main or off hand.",
   "tooltip.regen_resources.time_remaining": "%s s until restore",
   "regen_resources.regen": "Cooldown: %s",
   "regen_resources.can_regen": "Regenerate: %s",

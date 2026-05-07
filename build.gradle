@@ -1,6 +1,5 @@
 /*
- * NeoForge 対応: Forge 専用は forge/ と client/（MOD バス）に集約。
- * core.RegenPersistentTaskRegistration は TT_Core 連携のみでローダー非依存に近い。
+ * Minimal Forge 1.20.1 skeleton. Re-add Mixin / Jade / tt_core when needed.
  */
 plugins {
     id 'eclipse'
@@ -8,15 +7,12 @@ plugins {
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
-// バージョン等は properties から読み込み（ここが null でも base さえ正しければ起動はします）
 version = mod_version
 group = mod_group_id
 
 base {
-    // 【修正】変数をやめて直接指定（null: Invalid module name 対策）
     archivesName = mod_id
 }
 
@@ -26,11 +22,6 @@ minecraft {
     mappings channel: mapping_channel, version: mapping_version
     copyIdeResources = true
 
-    mixin {
-        add sourceSets.main, "regen_resources.refmap.json"
-        config "regen_resources.mixins.json"
-    }
-
     runs {
         configureEach {
             workingDirectory project.file('run')
@@ -38,7 +29,6 @@ minecraft {
             property 'forge.logging.console.level', 'info'
 
             mods {
-                // 【修正】直接指定
                 mod_id {
                     source sourceSets.main
                 }
@@ -47,19 +37,11 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', mod_id
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
         }
 
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        clientDebug {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-            jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'
+            args '--nogui'
         }
 
         data {
@@ -80,44 +62,36 @@ sourceSets {
 repositories {
     mavenLocal()
     maven {
-        url "https://www.cursemaven.com"
-        content { includeGroup "curse.maven" }
+        name = 'MinecraftForge'
+        url = 'https://maven.minecraftforge.net/'
     }
     maven {
-        name = 'tterrag maven'
-        url = 'https://maven.tterrag.com/'
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org'
     }
-    maven { url = 'https://spongepowered.org' }
     mavenCentral()
-
-    flatDir {
-        dir 'libs'
-    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    implementation fg.deobf("curse.maven:jade-324717:5876199")
     implementation fg.deobf("com.github.TeThoLaPot:tt_core:${tt_core_version}")
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
-            minecraft_version   : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            forge_version       : forge_version,
-            forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id              : mod_id, // 直接指定
-            mod_name            : mod_name,
-            mod_license         : mod_license,
-            mod_version         : mod_version,
-            mod_authors         : mod_authors,
-            mod_description     : mod_description
+            minecraft_version       : minecraft_version,
+            minecraft_version_range : minecraft_version_range,
+            forge_version           : forge_version,
+            forge_version_range     : forge_version_range,
+            loader_version_range    : loader_version_range,
+            mod_id                  : mod_id,
+            mod_name                : mod_name,
+            mod_license             : mod_license,
+            mod_version             : mod_version,
+            mod_authors             : mod_authors,
+            mod_description         : mod_description
     ]
     inputs.properties replaceProperties
-
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties
     }
@@ -126,14 +100,13 @@ tasks.named('processResources', ProcessResources).configure {
 tasks.named('jar', Jar).configure {
     manifest {
         attributes([
-                'Specification-Title'     : mod_id, // 直接指定
+                'Specification-Title'     : mod_id,
                 'Specification-Vendor'    : mod_authors,
                 'Specification-Version'   : '1',
                 'Implementation-Title'    : project.name,
                 'Implementation-Version'  : project.jar.archiveVersion,
                 'Implementation-Vendor'   : mod_authors,
                 'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                'MixinConfigs'            : "regen_resources.mixins.json"
         ])
     }
     finalizedBy 'reobfJar'
@@ -155,8 +128,3 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
-
-tasks.named('compileJava') {
-    dependsOn tasks.named('processResources')
-}
-
