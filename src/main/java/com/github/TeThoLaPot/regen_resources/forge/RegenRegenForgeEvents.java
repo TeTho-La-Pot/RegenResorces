@@ -1,7 +1,9 @@
 package com.github.TeThoLaPot.regen_resources.forge;
 
+import com.github.TeThoLaPot.regen_resources.common.block.RegenCorruptionFallback;
 import com.github.TeThoLaPot.regen_resources.common.block.RegenBlocks;
 import com.github.TeThoLaPot.regen_resources.common.item.BreakStuffItem;
+import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import com.github.TeThoLaPot.regen_resources.forge.block.Re_Blocks;
@@ -32,9 +34,10 @@ import java.util.UUID;
  * Forge 固有のイベント配線。
  * - 起動時に config JSON をロード
  * - executor を登録
- * - ブロック破壊で再生をスケジュール
- * <p>再生対象鉱石は Regen_Ore と同様、{@link BlockEvent.BreakEvent} をキャンセルして loot を評価し、
- * ドロップと経験値はプレイヤー足元に出して短いピックアップ遅延で疑似的な直接収納とする（満杯時は地面に残る）。
+ * <p>クリエイティブはバニラの破壊（ドロップなし）のままとし、{@link BlockEvent.BreakEvent} には介入しない。
+ * <p>サバイバルで再生シェルを設置するかは TT の {@code rr_src} と {@link RegenResourcesForgeConfig#ALLOW_NATURAL_REGEN} で決める。
+ * 設置しない場合はイベントをキャンセルせず、バニラの破壊・ドロップのまま。
+ * <p>再生シェルを設置する場合のみ {@link BlockEvent.BreakEvent} をキャンセルし foot-drop 収穫後に TT・シェルを置く。
  */
 @Mod.EventBusSubscriber(modid = com.github.TeThoLaPot.regen_resources.RegenResources.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RegenRegenForgeEvents {
@@ -42,7 +45,7 @@ public final class RegenRegenForgeEvents {
     private static final String EXECUTOR_ID = "regen_process";
     /** alpha と同様。キューに載ったタスクと {@link TT_core} のブロックデータが一致するときだけ復元する。 */
     private static final String TAG_REGEN_TICKET = "regen_ticket";
-    private static final String TAG_EXECUTE_AT = "execute_at";
+    private static final String TAG_EXECUTE_AT = RegenCorruptionFallback.TT_EXECUTE_AT;
     private static final String TAG_RESTORE_RL = "restore_rl";
 
     private RegenRegenForgeEvents() {}
@@ -89,6 +92,10 @@ public final class RegenRegenForgeEvents {
         }
 
         BlockPos posImmutable = pos.immutable();
+        if (!RegenOreMineEligibility.allows(level, posImmutable)) {
+            return;
+        }
+
         BlockState brokenSnapshot = broken;
         RegenRule ruleSnapshot = rule;
 
@@ -110,6 +117,9 @@ public final class RegenRegenForgeEvents {
         }
 
         // 以前のサイクルのキュー・ブロックマップを残すとタスクが複数走り、復元タイミングが不定になる
+        CompoundTag priorPlacement = TT_core.getBlockData(level, pos);
+        byte sourceSnap = RegenMineMarker.readSourceByte(priorPlacement);
+
         TT_core.removeBlockData(level, pos);
 
         CompoundTag data = new CompoundTag();
@@ -118,6 +128,7 @@ public final class RegenRegenForgeEvents {
         data.putString("visual", rule.visual().getSerializedName());
         data.putUUID(TAG_REGEN_TICKET, UUID.randomUUID());
         data.putLong(TAG_EXECUTE_AT, level.getGameTime() + rule.delayTicks());
+        data.putByte(RegenMineMarker.TT_SNAPSHOT, sourceSnap);
         var restoreId = brokenState.getBlock().builtInRegistryHolder().key().location();
         data.putString(TAG_RESTORE_RL, restoreId.toString());
 
@@ -161,8 +172,16 @@ public final class RegenRegenForgeEvents {
         }
 
         BlockState restore = TTDataUtils.readBlockState(data, "state", level.registryAccess());
+        byte snap = data.contains(RegenMineMarker.TT_SNAPSHOT, CompoundTag.TAG_BYTE)
+                ? data.getByte(RegenMineMarker.TT_SNAPSHOT)
+                : RegenMineMarker.SRC_IMPLICIT;
         int update = Block.UPDATE_NEIGHBORS | Block.UPDATE_CLIENTS;
         level.setBlock(pos, restore, update);
         TT_core.removeBlockData(level, pos);
+        if (snap == RegenMineMarker.SRC_ELIGIBLE) {
+            CompoundTag eligibleOnly = new CompoundTag();
+            eligibleOnly.putByte(RegenMineMarker.TT_SOURCE, RegenMineMarker.SRC_ELIGIBLE);
+            TT_core.saveBlockData(level, pos, eligibleOnly);
+        }
     };
 }

@@ -1,6 +1,7 @@
 package com.github.TeThoLaPot.regen_resources.jade;
 
 import com.github.TeThoLaPot.regen_resources.RegenResources;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenCorruptionFallback;
 import com.github.TeThoLaPot.regen_resources.forge.block.Re_Blocks;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import net.minecraft.core.BlockPos;
@@ -43,8 +44,8 @@ public enum RegenResourcesJadeServerData implements IServerDataProvider<BlockAcc
         if (stored.isEmpty()) {
             return;
         }
-        if (stored.contains("execute_at")) {
-            sync.putLong(SYNC_EXECUTE_AT, stored.getLong("execute_at"));
+        if (stored.contains(RegenCorruptionFallback.TT_EXECUTE_AT)) {
+            sync.putLong(SYNC_EXECUTE_AT, stored.getLong(RegenCorruptionFallback.TT_EXECUTE_AT));
         }
         String restore = stored.getString("restore_rl");
         if (!restore.isBlank()) {

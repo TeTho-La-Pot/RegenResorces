@@ -1,8 +1,11 @@
 package com.github.TeThoLaPot.regen_resources;
 
-import com.mojang.logging.LogUtils;
 import com.github.TeThoLaPot.regen_resources.forge.RegenResourcesForgeBootstrap;
+import com.github.TeThoLaPot.regen_resources.forge.RegenResourcesForgeConfig;
+import com.mojang.logging.LogUtils;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import org.slf4j.Logger;
 
 @Mod(RegenResources.MOD_ID)
@@ -13,6 +16,7 @@ public final class RegenResources {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public RegenResources() {
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RegenResourcesForgeConfig.SPEC);
         LOGGER.info("{} loaded (skeleton).", MOD_ID);
         RegenResourcesForgeBootstrap.bootstrap();
     }

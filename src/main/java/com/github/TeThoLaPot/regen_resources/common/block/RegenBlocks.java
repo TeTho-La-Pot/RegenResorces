@@ -1,9 +1,11 @@
 package com.github.TeThoLaPot.regen_resources.common.block;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -32,6 +34,21 @@ public class RegenBlocks extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new RegenBlockEntity(blockEntityType.get(), pos, state);
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (level.isClientSide()) {
+            return null;
+        }
+        BlockEntityType<RegenBlockEntity> expected = blockEntityType.get();
+        if (expected != type) {
+            return null;
+        }
+        return (BlockEntityTicker<T>) (Level lvl, BlockPos pos, BlockState st, T te) ->
+                RegenBlockEntity.tick(lvl, pos, st, (RegenBlockEntity) te);
     }
 
     @Override
