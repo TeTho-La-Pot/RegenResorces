@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -32,9 +33,8 @@ import java.util.UUID;
  * - 起動時に config JSON をロード
  * - executor を登録
  * - ブロック破壊で再生をスケジュール
- * <p>alpha と同様、{@link BlockEvent.BreakEvent} 内で直接 {@code setBlock} せず
- * {@link net.minecraft.server.MinecraftServer#execute} で 1 tick 遅らせ、破壊完了後（座標がエア）に
- * TT 保存・タスク・再生シェルを置く（バニラの後続破壊で上書きされないようにする）。
+ * <p>再生対象鉱石は Regen_Ore と同様、{@link BlockEvent.BreakEvent} をキャンセルして loot を評価し、
+ * ドロップと経験値はプレイヤー足元に出して短いピックアップ遅延で疑似的な直接収納とする（満杯時は地面に残る）。
  */
 @Mod.EventBusSubscriber(modid = com.github.TeThoLaPot.regen_resources.RegenResources.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RegenRegenForgeEvents {
@@ -42,6 +42,8 @@ public final class RegenRegenForgeEvents {
     private static final String EXECUTOR_ID = "regen_process";
     /** alpha と同様。キューに載ったタスクと {@link TT_core} のブロックデータが一致するときだけ復元する。 */
     private static final String TAG_REGEN_TICKET = "regen_ticket";
+    private static final String TAG_EXECUTE_AT = "execute_at";
+    private static final String TAG_RESTORE_RL = "restore_rl";
 
     private RegenRegenForgeEvents() {}
 
@@ -51,7 +53,7 @@ public final class RegenRegenForgeEvents {
         TTDataBank.registerExecutor(EXECUTOR_ID, REGEN_PROCESS_EXECUTOR);
     }
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.isCanceled()) {
             return;
@@ -61,6 +63,9 @@ public final class RegenRegenForgeEvents {
         }
         Player player = event.getPlayer();
         if (player == null) {
+            return;
+        }
+        if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
         if (player.isCreative()) {
@@ -86,7 +91,14 @@ public final class RegenRegenForgeEvents {
         BlockPos posImmutable = pos.immutable();
         BlockState brokenSnapshot = broken;
         RegenRule ruleSnapshot = rule;
-        level.getServer().execute(() -> commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot));
+
+        event.setCanceled(true);
+        if (!RegenOreHarvest.harvestAndRemove(serverPlayer, level, posImmutable, brokenSnapshot)) {
+            event.setCanceled(false);
+            return;
+        }
+
+        commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot);
     }
 
     /**
@@ -105,6 +117,9 @@ public final class RegenRegenForgeEvents {
         TTDataUtils.putBlockState(data, "state", brokenState);
         data.putString("visual", rule.visual().getSerializedName());
         data.putUUID(TAG_REGEN_TICKET, UUID.randomUUID());
+        data.putLong(TAG_EXECUTE_AT, level.getGameTime() + rule.delayTicks());
+        var restoreId = brokenState.getBlock().builtInRegistryHolder().key().location();
+        data.putString(TAG_RESTORE_RL, restoreId.toString());
 
         TT_core.saveBlockData(level, pos, data);
         TTDataBank.schedulePersistentTask(level, EXECUTOR_ID, rule.delayTicks(), data.copy());

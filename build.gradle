@@ -37,6 +37,10 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', mod_id
+            // Jade 公式: https://jademc.readthedocs.io/en/latest/plugins19/getting-started/
+            // dev 環境で Jade の mixin が SRG/MCP と噛み合わず落ちるのを防ぐ
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.projectDir}/build/createSrgToMcp/output.srg"
         }
 
         server {
@@ -69,12 +73,24 @@ repositories {
         name = 'ParchmentMC'
         url = 'https://maven.parchmentmc.org'
     }
+    // Jade (CurseMaven)
+    maven {
+        name = 'CurseMaven'
+        url = 'https://www.cursemaven.com'
+        content {
+            includeGroup 'curse.maven'
+        }
+    }
     mavenCentral()
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("com.github.TeThoLaPot:tt_core:${tt_core_version}")
+
+    // Jade 公式（Forge）: implementation fg.deobf("curse.maven:jade-324717:${jade_id}")
+    // ※最終 jar に同梱されない（ソースセットのみパッケージング）。runClient は上記 mixin プロパティ必須。
+    implementation fg.deobf("curse.maven:jade-324717:${jade_file_id}")
 }
 
 tasks.named('processResources', ProcessResources).configure {

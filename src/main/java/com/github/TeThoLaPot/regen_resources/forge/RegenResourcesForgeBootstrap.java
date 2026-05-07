@@ -14,6 +14,7 @@ public final class RegenResourcesForgeBootstrap {
     public static void bootstrap() {
         var modBus = FMLJavaModLoadingContext.get().getModEventBus();
         Re_Blocks.BLOCKS.register(modBus);
+        Re_Blocks.BLOCK_ENTITY_TYPES.register(modBus);
         Re_Items.ITEMS.register(modBus);
         Re_CreativeTabs.CREATIVE_MODE_TABS.register(modBus);
     }
