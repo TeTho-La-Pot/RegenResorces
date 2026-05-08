@@ -1,5 +1,6 @@
 package com.github.TeThoLaPot.regen_resources.common.block;
 
+import com.github.TeThoLaPot.regen_resources.platform.forge.event.RegenRegenForgeEvents;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -13,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class RegenCorruptionFallback {
 
-    /** {@link com.github.TeThoLaPot.regen_resources.forge.RegenRegenForgeEvents} と同じキー。 */
+    /** {@link RegenRegenForgeEvents} と同じキー。 */
     public static final String TT_EXECUTE_AT = "execute_at";
 
     /** 設置直後の TT 書き込み待ち・読込順のばらつき用（約 2 秒）。 */
