@@ -1,7 +1,7 @@
 package com.github.TeThoLaPot.regen_resources;
 
-import com.github.TeThoLaPot.regen_resources.forge.RegenResourcesForgeBootstrap;
-import com.github.TeThoLaPot.regen_resources.forge.RegenResourcesForgeConfig;
+import com.github.TeThoLaPot.regen_resources.platform.forge.RegenResourcesForgeBootstrap;
+import com.github.TeThoLaPot.regen_resources.platform.forge.config.RegenResourcesForgeConfig;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
