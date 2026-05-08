@@ -1,14 +1,12 @@
 package com.github.TeThoLaPot.regen_resources.common.tt;
 
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
-import com.github.TeThoLaPot.regen_resources.forge.network.ClientboundJadeRegenProbeInvalidatePacket;
-import com.github.TeThoLaPot.regen_resources.forge.network.RegenResourcesNetwork;
+import com.github.TeThoLaPot.regen_resources.platform.RegenPlatformServices;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.network.PacketDistributor;
 
 /**
  * ワールド上のブロック変化（ピストン移動など）後に TT を整合させる。
@@ -28,16 +26,17 @@ public final class RegenBlockMoveHooks {
         if (RegenSetBlockTtGuard.isSuppressed()) {
             return;
         }
+        CompoundTag prior = TT_core.getBlockData(level, pos);
+        boolean hadPlacementTt = !prior.isEmpty();
         TT_core.removeBlockData(level, pos);
         if (physicallyMovedByPiston && !newState.isAir()) {
             CompoundTag deny = new CompoundTag();
             deny.putByte(RegenMineMarker.TT_SOURCE, RegenMineMarker.SRC_SURVIVAL);
             TT_core.saveBlockData(level, pos, deny);
         }
-        if (physicallyMovedByPiston) {
-            BlockPos ip = pos.immutable();
-            var pkt = new ClientboundJadeRegenProbeInvalidatePacket(level.dimension().location(), ip);
-            RegenResourcesNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(ip)), pkt);
+        // Jade プローブ結果は TT・可否に依存する。破壊(空気)や TT 削除時はキャッシュだけが古くなりがちなので明示的に捨てる。
+        if (physicallyMovedByPiston || newState.isAir() || hadPlacementTt) {
+            RegenPlatformServices.NETWORK.invalidateJadeProbe(level, pos);
         }
     }
 }

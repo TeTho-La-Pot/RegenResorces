@@ -1,5 +1,6 @@
 package com.github.TeThoLaPot.regen_resources.common.item;
 
+import com.github.TeThoLaPot.regen_resources.platform.forge.event.RegenBlockBreakEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
@@ -17,8 +18,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Regen_Ore の BreakStuff に近い挙動: スニーク＋使用でモード切替、除去 ON 時は再生ブロックを
- * （{@link com.github.TeThoLaPot.regen_resources.forge.RegenBlockBreakEvents} で判定）ツールと同様に掘って除去する。
+ * 破壊のオーブ（英: Destruction Orb）。スニーク＋使用でモード切替、破壊 ON 時は再生ブロックを
+ * （{@link RegenBlockBreakEvents} で判定）ツールと同様に掘って除去する。
  */
 public class BreakStuffItem extends Item {
 
