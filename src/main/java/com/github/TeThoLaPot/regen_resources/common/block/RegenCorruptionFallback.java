@@ -35,6 +35,17 @@ public final class RegenCorruptionFallback {
         };
     }
 
+    /**
+     * プリセット別の採掘速度・適正ツールの参照先。{@link #replacementFor} と同じブロックだが、
+     * {@code debris} / {@code debris_preset} のみ古代の残骸を参照する（破損時の設置はネザーラックのまま）。
+     */
+    public static BlockState miningSampleFor(RegenVisual visual) {
+        if (visual == RegenVisual.DEBRIS || visual == RegenVisual.DEBRIS_PRESET) {
+            return Blocks.ANCIENT_DEBRIS.defaultBlockState();
+        }
+        return replacementFor(visual);
+    }
+
     public static void apply(ServerLevel level, BlockPos pos, BlockState regenState) {
         if (!(regenState.getBlock() instanceof RegenBlocks)) {
             return;

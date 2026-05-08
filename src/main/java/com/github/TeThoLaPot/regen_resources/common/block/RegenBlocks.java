@@ -1,9 +1,14 @@
 package com.github.TeThoLaPot.regen_resources.common.block;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -34,6 +39,22 @@ public class RegenBlocks extends Block implements EntityBlock {
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new RegenBlockEntity(blockEntityType.get(), pos, state);
+    }
+
+    private static BlockState miningSample(BlockState shellState) {
+        return RegenCorruptionFallback.miningSampleFor(shellState.getValue(VISUAL));
+    }
+
+    @Override
+    public float getExplosionResistance(BlockState state, BlockGetter level, BlockPos pos, Explosion explosion) {
+        BlockState sample = miningSample(state);
+        return sample.getBlock().getExplosionResistance(sample, level, pos, explosion);
+    }
+
+    @Override
+    public SoundType getSoundType(BlockState state, LevelReader level, BlockPos pos, @Nullable Entity entity) {
+        BlockState sample = miningSample(state);
+        return sample.getBlock().getSoundType(sample, level, pos, entity);
     }
 
     @Nullable

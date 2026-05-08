@@ -8,6 +8,9 @@
     "LevelMixin",
     "LevelChunkMixin"
   ],
+  "client": [
+    "client.MultiPlayerGameModeMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
