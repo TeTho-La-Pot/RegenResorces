@@ -37,6 +37,21 @@ public final class RegenRuleRegistry {
         return null;
     }
 
+    /**
+     * ディメンション無視でブロックだけ見る（クライアントが Jade のサーバー問い合わせを行うかのヒューリスティック用）。
+     */
+    public static boolean matchesPresetTargetsIgnoringDimension(BlockState broken) {
+        if (broken == null || RULES.isEmpty()) {
+            return false;
+        }
+        for (RegenRule rule : RULES) {
+            if (rule != null && matches(broken, rule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean matches(BlockState state, RegenRule rule) {
         var blockId = state.getBlock().builtInRegistryHolder().key().location();
         if (rule.blockIds().contains(blockId)) {

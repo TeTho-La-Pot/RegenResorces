@@ -9,8 +9,8 @@ import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 
 /**
- * alpha の Jade 連携をベースにした実装。
- * <p>Jade のサーバー同期は {@link BlockEntity} 向け API のため {@link RegenBlockEntity} に紐付ける。
+ * alpha と同様に Jade はプロバイダ登録のみ。
+ * 無タイルブロックの可否は Forge チャネル（{@link com.github.TeThoLaPot.regen_resources.forge.network.RegenResourcesNetwork}）でサーバーから取得する。
  */
 @WailaPlugin
 public final class RegenResourcesJadePlugin implements IWailaPlugin {

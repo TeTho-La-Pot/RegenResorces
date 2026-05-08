@@ -1,5 +1,6 @@
 package com.github.TeThoLaPot.regen_resources.forge;
 
+import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineEligibility;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import net.minecraft.core.BlockPos;
@@ -14,12 +15,6 @@ final class RegenOreMineEligibility {
     static boolean allows(ServerLevel level, BlockPos pos) {
         CompoundTag d = TT_core.getBlockData(level, pos);
         byte src = RegenMineMarker.readSourceByte(d);
-        if (src == RegenMineMarker.SRC_SURVIVAL) {
-            return false;
-        }
-        if (src == RegenMineMarker.SRC_ELIGIBLE) {
-            return true;
-        }
-        return RegenResourcesForgeConfig.ALLOW_NATURAL_REGEN.get();
+        return RegenMineEligibility.allowsAfterBreak(src, RegenResourcesForgeConfig.ALLOW_NATURAL_REGEN.get());
     }
 }

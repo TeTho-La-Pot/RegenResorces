@@ -7,6 +7,7 @@ import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import com.github.TeThoLaPot.regen_resources.forge.block.Re_Blocks;
+import com.github.TeThoLaPot.regen_resources.common.tt.RegenSetBlockTtGuard;
 import com.github.TeThoLaPot.regen_resources.forge.config.RegenPresetIo;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import com.github.TeThoLaPot.tt_core.api.ITTTaskExecutor;
@@ -138,7 +139,9 @@ public final class RegenRegenForgeEvents {
         BlockState waiting = Re_Blocks.REGEN_BLOCK.get().defaultBlockState()
                 .setValue(RegenBlocks.VISUAL, rule.visual());
         int update = Block.UPDATE_NEIGHBORS | Block.UPDATE_CLIENTS;
-        level.setBlock(pos, waiting, update);
+        try (RegenSetBlockTtGuard ignored = RegenSetBlockTtGuard.acquire()) {
+            level.setBlock(pos, waiting, update);
+        }
     }
 
     private static boolean holdsBreakStuffRemoveMode(Player player) {

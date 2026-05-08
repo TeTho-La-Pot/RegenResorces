@@ -1,12 +1,11 @@
 package com.github.TeThoLaPot.regen_resources.jade;
 
 import com.github.TeThoLaPot.regen_resources.RegenResources;
-import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
+import com.github.TeThoLaPot.regen_resources.forge.network.RegenJadeProbeClientCache;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -14,7 +13,7 @@ import snownee.jade.api.config.IPluginConfig;
 
 /**
  * RegenPresets 対象ブロックにカーソルを合わせたときに一行追加する。
- * alpha の {@code RegenResourcesJadeRegenEligibleProvider} と同じ用途。
+ * ブロックエンティティありは {@link RegenResourcesJadeServerData}、無しは alpha と同様にサーバー権威データを独自パケットで受ける。
  */
 public enum RegenResourcesJadeRegenEligibleProvider implements IBlockComponentProvider {
     INSTANCE;
@@ -26,15 +25,27 @@ public enum RegenResourcesJadeRegenEligibleProvider implements IBlockComponentPr
 
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-        Level level = accessor.getLevel();
-        if (level == null) {
+        CompoundTag srv = accessor.getServerData();
+        CompoundTag effective;
+        if (srv.getBoolean(RegenResourcesJadeServerData.SYNC_RULE_MATCH)) {
+            effective = srv;
+        } else {
+            CompoundTag cached = RegenJadeProbeClientCache.get(accessor);
+            if (cached != null) {
+                effective = cached;
+            } else {
+                RegenJadeProbeClientCache.requestIfNeeded(accessor);
+                return;
+            }
+        }
+        if (!effective.getBoolean(RegenResourcesJadeServerData.SYNC_RULE_MATCH)) {
             return;
         }
-        BlockState state = accessor.getBlockState();
-        if (RegenRuleRegistry.firstMatch(level.dimension().location(), state) == null) {
-            return;
+        if (effective.getBoolean(RegenResourcesJadeServerData.SYNC_ALLOWS_REGEN)) {
+            tooltip.add(Component.translatable("jade.regen_resources.regen_eligible").withStyle(ChatFormatting.GREEN));
+        } else {
+            tooltip.add(Component.translatable("jade.regen_resources.regen_not_eligible").withStyle(ChatFormatting.RED));
         }
-        tooltip.add(Component.translatable("jade.regen_resources.regen_eligible").withStyle(ChatFormatting.GREEN));
     }
 }
 

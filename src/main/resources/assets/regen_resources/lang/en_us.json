@@ -9,6 +9,7 @@
   "jade.regen_resources.time_until_imminent": "Time until regen: imminent",
   "jade.regen_resources.regen_target": "Regeneration target: %s",
   "jade.regen_resources.regen_eligible": "Regeneration possible",
+  "jade.regen_resources.regen_not_eligible": "Cannot regenerate",
   "tooltip.regen_resources.break_stuff_on": "Removal tool: ON",
   "tooltip.regen_resources.break_stuff_off": "Removal tool: OFF",
   "tooltip.regen_resources.break_stuff_description": "Sneak + use to toggle. With removal ON, mine the regenerating ore while holding this in your main or off hand.",
