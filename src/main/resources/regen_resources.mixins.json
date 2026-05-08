@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "com.github.TeThoLaPot.regen_resources.mixin",
   "compatibilityLevel": "JAVA_17",
+  "refmap": "regen_resources.refmap.json",
 
   "mixins": [
     "LevelMixin",

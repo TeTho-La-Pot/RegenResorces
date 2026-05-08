@@ -27,5 +27,9 @@ public final class Re_Items {
             () -> new BreakStuffItem(new Item.Properties().stacksTo(1))
     );
 
+    /** 残骸掘りで得る破片（4 個クラフトで残骸 1 に戻す）。 */
+    public static final RegistryObject<Item> ANCIENT_FRAGMENT =
+            ITEMS.register("ancient_fragment", () -> new Item(new Item.Properties()));
+
     private Re_Items() {}
 }

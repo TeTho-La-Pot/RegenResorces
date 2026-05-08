@@ -22,6 +22,12 @@ public final class RegenResourcesForgeConfig {
                     "When false, those placements stay unmarked and follow allowNaturalGenerationRegen only.")
             .define("commandLikePlacementEligible", true);
 
+    public static final ForgeConfigSpec.BooleanValue CHANGE_ANCIENT_DEBRIS_DROPS = BUILDER
+            .comment(
+                    "When true, mined ancient debris (without Silk Touch) drops regen_resources:ancient_fragment instead of debris items,",
+                    "with Fortune applying to fragment count (see loot modifier). When false, vanilla debris drops unchanged.")
+            .define("changeAncientDebrisDrops", true);
+
     public static final ForgeConfigSpec SPEC = BUILDER.build();
 
     private RegenResourcesForgeConfig() {}

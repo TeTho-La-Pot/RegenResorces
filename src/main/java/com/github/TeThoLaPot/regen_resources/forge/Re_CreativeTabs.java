@@ -38,6 +38,7 @@ public final class Re_CreativeTabs {
                                     output.accept(stack);
                                 }
                                 output.accept(Re_Items.BREAK_STUFF.get());
+                                output.accept(Re_Items.ANCIENT_FRAGMENT.get());
                             })
                             .build()
             );

@@ -4,6 +4,7 @@ import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import com.github.TeThoLaPot.regen_resources.forge.block.Re_Blocks;
 import com.github.TeThoLaPot.regen_resources.forge.config.RegenPresetIo;
 import com.github.TeThoLaPot.regen_resources.forge.item.Re_Items;
+import com.github.TeThoLaPot.regen_resources.forge.loot.ReLootModifiers;
 import com.github.TeThoLaPot.regen_resources.forge.network.RegenResourcesNetwork;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -21,6 +22,7 @@ public final class RegenResourcesForgeBootstrap {
         Re_Blocks.BLOCK_ENTITY_TYPES.register(modBus);
         Re_Items.ITEMS.register(modBus);
         Re_CreativeTabs.CREATIVE_MODE_TABS.register(modBus);
+        ReLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modBus);
         modBus.addListener(RegenResourcesForgeBootstrap::onCommonSetup);
     }
 
