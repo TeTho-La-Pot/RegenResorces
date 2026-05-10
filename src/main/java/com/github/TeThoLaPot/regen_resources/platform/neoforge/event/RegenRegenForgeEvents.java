@@ -8,8 +8,8 @@ import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import com.github.TeThoLaPot.regen_resources.common.tt.RegenSetBlockTtGuard;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.RegenResourcesForgeBootstrap;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.block.Re_Blocks;
-import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenPresetIo;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import com.github.TeThoLaPot.tt_core.api.ITTTaskExecutor;
 import com.github.TeThoLaPot.tt_core.api.TTDataUtils;
@@ -56,7 +56,7 @@ public final class RegenRegenForgeEvents {
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
-        RegenRuleRegistry.setRules(RegenPresetIo.loadOrCreateDefaults());
+        RegenResourcesForgeBootstrap.applyPresetRulesFromDisk();
         TTDataBank.registerExecutor(EXECUTOR_ID, REGEN_PROCESS_EXECUTOR);
     }
 

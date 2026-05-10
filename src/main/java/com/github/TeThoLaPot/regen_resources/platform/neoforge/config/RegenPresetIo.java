@@ -37,6 +37,30 @@ import static net.minecraft.core.registries.Registries.BLOCK;
 public final class RegenPresetIo {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    private static final String README_FILE = "README_RegenPresets.txt";
+    private static final String README_TEXT =
+            """
+                    RegenResources — RegenPresets folder
+                    - Put preset .json files here (see mod documentation for alpha vs flat format).
+                    - Common config: .minecraft/config/regen_resources-common.toml (or your instance config folder).
+                    - bootstrapVanillaPresetsWhenEmpty: if true, when this folder has no .json files, the mod writes built-in vanilla ore presets once.
+                      If false, an empty folder means zero rules until you add JSON.
+                    このフォルダに .json を配置します（形式はマニュアル参照）。
+                    bootstrapVanillaPresetsWhenEmpty が true のときだけ、.json が無い場合にバニラ鉱石のサンプルが自動生成されます。
+                    """;
+
+    private static void writePresetDirectoryReadmeIfAbsent(Path dir) {
+        Path readme = dir.resolve(README_FILE);
+        if (Files.exists(readme)) {
+            return;
+        }
+        try {
+            Files.writeString(readme, README_TEXT.stripIndent(), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            LOGGER.warn("RegenResources: could not write {}: {}", README_FILE, ex.toString());
+        }
+    }
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     private static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
@@ -46,11 +70,16 @@ public final class RegenPresetIo {
         return FMLPaths.CONFIGDIR.get().resolve("RegenResources").resolve("RegenPresets");
     }
 
-    /** すべてのプリセットを読み、alpha / フラット混在可。フォルダ空なら vanilla 既定を書き出す（alpha と同様）。 */
+    /**
+     * すべてのプリセットを読み、alpha / フラット混在可。
+     * <p>バニラ既定 JSON の自動生成は {@link RegenResourcesForgeConfig#BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY} が true
+     * かつフォルダに .json が無いときだけ（共通コンフィグ読込後に実行されること）。
+     */
     public static List<RegenRule> loadOrCreateDefaults() {
         Path dir = rulesDir();
         try {
             Files.createDirectories(dir);
+            writePresetDirectoryReadmeIfAbsent(dir);
             bootstrapVanillaIfFolderEmpty(dir);
         } catch (IOException ex) {
             LOGGER.warn("RegenResources: RegenPresets bootstrap: {}", ex.toString());
