@@ -33,6 +33,7 @@ public final class RegenCorruptionFallback {
             case END, END_PRESET -> Blocks.END_STONE.defaultBlockState();
             case DEBRIS, DEBRIS_PRESET -> Blocks.NETHERRACK.defaultBlockState();
             case LOG_PRESET -> Blocks.OAK_LOG.defaultBlockState();
+            case CUSTOM_PRESET -> Blocks.STONE.defaultBlockState();
             case MIMIC -> Blocks.STONE.defaultBlockState();
         };
     }
@@ -47,6 +48,9 @@ public final class RegenCorruptionFallback {
         }
         if (visual == RegenVisual.LOG_PRESET) {
             return Blocks.OAK_LOG.defaultBlockState();
+        }
+        if (visual == RegenVisual.CUSTOM_PRESET) {
+            return Blocks.STONE.defaultBlockState();
         }
         return replacementFor(visual);
     }

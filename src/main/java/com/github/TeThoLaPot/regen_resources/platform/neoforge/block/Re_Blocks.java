@@ -1,10 +1,12 @@
 package com.github.TeThoLaPot.regen_resources.platform.neoforge.block;
 
 import com.github.TeThoLaPot.regen_resources.RegenResources;
+import com.github.TeThoLaPot.regen_resources.common.block.CustomPresetDummyBlock;
 import com.github.TeThoLaPot.regen_resources.common.block.PresetAppearanceDummyBlock;
 import com.github.TeThoLaPot.regen_resources.common.block.RegenBlockEntity;
 import com.github.TeThoLaPot.regen_resources.common.block.RegenBlocks;
 import com.github.TeThoLaPot.regen_resources.common.block.RegenVisual;
+import com.github.TeThoLaPot.regen_resources.common.block.StrippedLogPresetDummyBlock;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -36,14 +38,6 @@ public final class Re_Blocks {
             )
     );
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RegenBlockEntity>> REGEN_BLOCK_ENTITY =
-            BLOCK_ENTITY_TYPES.register(
-                    "regen_block",
-                    () -> BlockEntityType.Builder.of(
-                                    (pos, state) -> new RegenBlockEntity(REGEN_BLOCK_ENTITY_HOLDER[0].get(), pos, state),
-                                    REGEN_BLOCK.get())
-                            .build(null));
-
     public static final DeferredHolder<Block, PresetAppearanceDummyBlock> PRESET_DUMMY_STONE = BLOCKS.register(
             "preset_dummy_stone",
             () -> new PresetAppearanceDummyBlock(RegenVisual.STONE_PRESET, dummyProps()));
@@ -59,13 +53,23 @@ public final class Re_Blocks {
     public static final DeferredHolder<Block, PresetAppearanceDummyBlock> PRESET_DUMMY_DEBRIS = BLOCKS.register(
             "preset_dummy_debris",
             () -> new PresetAppearanceDummyBlock(RegenVisual.DEBRIS_PRESET, dummyProps()));
-    public static final DeferredHolder<Block, PresetAppearanceDummyBlock> PRESET_DUMMY_STRIPPED_LOG = BLOCKS.register(
+    public static final DeferredHolder<Block, StrippedLogPresetDummyBlock> PRESET_DUMMY_STRIPPED_LOG = BLOCKS.register(
             "preset_dummy_stripped_log",
-            () -> new PresetAppearanceDummyBlock(RegenVisual.LOG_PRESET, dummyProps()));
-    /** カスタムプリセット用の建築ダミー（採掘挙動は石プリセットに合わせる）。 */
-    public static final DeferredHolder<Block, PresetAppearanceDummyBlock> PRESET_DUMMY_CUSTOM = BLOCKS.register(
+            () -> new StrippedLogPresetDummyBlock(() -> REGEN_BLOCK_ENTITY_HOLDER[0].get(), dummyProps()));
+    /** カスタムプリセット用の建築ダミー（未設定時は採掘挙動を石プリセットに合わせる）。 */
+    public static final DeferredHolder<Block, CustomPresetDummyBlock> PRESET_DUMMY_CUSTOM = BLOCKS.register(
             "preset_dummy_custom",
-            () -> new PresetAppearanceDummyBlock(RegenVisual.STONE_PRESET, dummyProps()));
+            () -> new CustomPresetDummyBlock(() -> REGEN_BLOCK_ENTITY_HOLDER[0].get(), dummyProps()));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RegenBlockEntity>> REGEN_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register(
+                    "regen_block",
+                    () -> BlockEntityType.Builder.of(
+                                    (pos, state) -> new RegenBlockEntity(REGEN_BLOCK_ENTITY_HOLDER[0].get(), pos, state),
+                                    REGEN_BLOCK.get(),
+                                    PRESET_DUMMY_STRIPPED_LOG.get(),
+                                    PRESET_DUMMY_CUSTOM.get())
+                            .build(null));
 
     private static BlockBehaviour.Properties dummyProps() {
         return BlockBehaviour.Properties.of()

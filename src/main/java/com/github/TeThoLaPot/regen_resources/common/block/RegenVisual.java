@@ -20,7 +20,9 @@ public enum RegenVisual implements StringRepresentable {
     END_PRESET("end_preset"),
     DEBRIS_PRESET("debris_preset"),
     /** 原木系プリセット（blockstates / アイテム predicate は他プリセットと同列に追加）。 */
-    LOG_PRESET("log_preset");
+    LOG_PRESET("log_preset"),
+    /** {@code custom_preset.json} 由来のカスタムプリセット。 */
+    CUSTOM_PRESET("custom_preset");
 
     private final String id;
 

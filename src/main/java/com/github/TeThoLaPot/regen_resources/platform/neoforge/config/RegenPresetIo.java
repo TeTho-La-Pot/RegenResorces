@@ -185,6 +185,7 @@ public final class RegenPresetIo {
         n += writeDefaultJsonIfAbsent(presetsDir.resolve("end_preset.json"), GSON_PRETTY.toJson(emptyEndPreset()));
         n += writeDefaultJsonIfAbsent(presetsDir.resolve("debris_preset.json"), GSON_PRETTY.toJson(vanillaDebrisPreset()));
         n += writeDefaultJsonIfAbsent(presetsDir.resolve("log_preset.json"), GSON_PRETTY.toJson(vanillaLogPreset()));
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("custom_preset.json"), GSON_PRETTY.toJson(vanillaCustomPreset()));
         if (n > 0) {
             LOGGER.info("RegenResources: wrote {} missing default RegenPresets under {}", n, presetsDir);
         }
@@ -297,7 +298,7 @@ public final class RegenPresetIo {
         r.preset = "stone_preset";
         r.entries = new ArrayList<>();
         PresetEntryJson common = new PresetEntryJson();
-        common.tick = 200L;
+        common.delayTicks = 200L;
         common.blocks = List.of(
                 "minecraft:coal_ore",
                 "minecraft:iron_ore",
@@ -308,7 +309,7 @@ public final class RegenPresetIo {
                 "minecraft:lapis_ore"
         );
         PresetEntryJson slow = new PresetEntryJson();
-        slow.tick = 6000L;
+        slow.delayTicks = 6000L;
         slow.blocks = List.of("minecraft:diamond_ore");
         r.entries.add(common);
         r.entries.add(slow);
@@ -320,7 +321,7 @@ public final class RegenPresetIo {
         r.preset = "deepslate_preset";
         r.entries = new ArrayList<>();
         PresetEntryJson common = new PresetEntryJson();
-        common.tick = 200L;
+        common.delayTicks = 200L;
         common.blocks = List.of(
                 "minecraft:deepslate_coal_ore",
                 "minecraft:deepslate_iron_ore",
@@ -331,7 +332,7 @@ public final class RegenPresetIo {
                 "minecraft:deepslate_lapis_ore"
         );
         PresetEntryJson slow = new PresetEntryJson();
-        slow.tick = 6000L;
+        slow.delayTicks = 6000L;
         slow.blocks = List.of("minecraft:deepslate_diamond_ore");
         r.entries.add(common);
         r.entries.add(slow);
@@ -343,7 +344,7 @@ public final class RegenPresetIo {
         r.preset = "nether_preset";
         r.entries = new ArrayList<>();
         PresetEntryJson e = new PresetEntryJson();
-        e.tick = 200L;
+        e.delayTicks = 200L;
         e.blocks = List.of("minecraft:nether_gold_ore", "minecraft:nether_quartz_ore");
         r.entries.add(e);
         return r;
@@ -354,7 +355,7 @@ public final class RegenPresetIo {
         r.preset = "debris_preset";
         r.entries = new ArrayList<>();
         PresetEntryJson e = new PresetEntryJson();
-        e.tick = 12000L;
+        e.delayTicks = 12000L;
         e.blocks = List.of("minecraft:ancient_debris");
         r.entries.add(e);
         return r;
@@ -372,7 +373,7 @@ public final class RegenPresetIo {
         r.preset = "log_preset";
         r.entries = new ArrayList<>();
         PresetEntryJson e = new PresetEntryJson();
-        e.tick = 1200L;
+        e.delayTicks = 1200L;
         e.blocks = List.of(
                 "minecraft:oak_log",
                 "minecraft:spruce_log",
@@ -381,7 +382,20 @@ public final class RegenPresetIo {
                 "minecraft:acacia_log",
                 "minecraft:dark_oak_log",
                 "minecraft:mangrove_log",
-                "minecraft:cherry_log");
+                "minecraft:cherry_log",
+                "minecraft:pale_oak_log");
+        r.entries.add(e);
+        return r;
+    }
+
+    /** カスタムプリセットダミー用のサンプル（不足時のみ生成）。 */
+    private static PresetFileRoot vanillaCustomPreset() {
+        PresetFileRoot r = new PresetFileRoot();
+        r.preset = "custom_preset";
+        r.entries = new ArrayList<>();
+        PresetEntryJson e = new PresetEntryJson();
+        e.delayTicks = 200L;
+        e.blocks = List.of("minecraft:stone");
         r.entries.add(e);
         return r;
     }

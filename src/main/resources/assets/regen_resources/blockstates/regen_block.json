@@ -11,6 +11,7 @@
     "visual=nether_preset": { "model": "regen_resources:block/n_regen_preset" },
     "visual=end_preset": { "model": "regen_resources:block/e_regen_preset" },
     "visual=debris_preset": { "model": "regen_resources:block/debris_regen_preset" },
-    "visual=log_preset": { "model": "regen_resources:block/log_regen_preset" }
+    "visual=log_preset": { "model": "regen_resources:block/log_regen_preset" },
+    "visual=custom_preset": { "model": "regen_resources:block/regen_preset" }
   }
 }

@@ -1,8 +1,11 @@
 package com.github.TeThoLaPot.regen_resources.common.regen;
 
+import com.github.TeThoLaPot.regen_resources.common.block.RegenVisual;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class RegenRuleRegistry {
@@ -50,6 +53,23 @@ public final class RegenRuleRegistry {
             }
         }
         return false;
+    }
+
+    /**
+     * {@code preset == custom_preset} のルールのうち、渡されたブロックにマッチするもの（ダミーブロックのサイクル用）。
+     */
+    public static List<RegenRule> matchingCustomPresetRules(Block heldBlock) {
+        if (heldBlock == null || RULES.isEmpty()) {
+            return List.of();
+        }
+        BlockState state = heldBlock.defaultBlockState();
+        List<RegenRule> out = new ArrayList<>();
+        for (RegenRule rule : RULES) {
+            if (rule != null && rule.visual() == RegenVisual.CUSTOM_PRESET && matches(state, rule)) {
+                out.add(rule);
+            }
+        }
+        return out;
     }
 
     private static boolean matches(BlockState state, RegenRule rule) {
