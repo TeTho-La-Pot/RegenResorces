@@ -9,14 +9,27 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
-// 兄弟 ..TT_Core があれば Maven Local 不要で tt_core を解決（mod_version は gradle.properties で両者一致）
-def ttCoreIncluded = file('../TT_Core')
-if (ttCoreIncluded.isDirectory() && new File(ttCoreIncluded, 'settings.gradle').isFile()) {
-    includeBuild(ttCoreIncluded) {
+// ../TT_Core が NeoForge プロジェクトのときだけ composite（Forge 1.20.1 の TT_Core では includeBuild すると Forge の依存解決が混ざり CONFIGURE が失敗する）
+def ttCoreDir = file('../TT_Core')
+def ttCoreBuildGradle = new File(ttCoreDir, 'build.gradle')
+def ttCoreLooksNeoForge =
+        ttCoreBuildGradle.isFile() &&
+        ttCoreBuildGradle.getText('UTF-8').contains('net.neoforged.gradle.userdev')
+
+if (ttCoreDir.isDirectory()
+        && new File(ttCoreDir, 'settings.gradle').isFile()
+        && ttCoreLooksNeoForge) {
+    includeBuild(ttCoreDir) {
         dependencySubstitution {
             substitute module('com.github.TeThoLaPot:tt_core') using project(':')
         }
     }
+    logger.lifecycle('RegenResources: includeBuild(../TT_Core) enabled (NeoForge tt_core).')
+} else if (ttCoreDir.isDirectory()) {
+    logger.lifecycle(
+            'RegenResources: ../TT_Core is not NeoForge (or missing build.gradle); skipping includeBuild. ' +
+                    'Checkout TT_Core branch 1.21.1 for composite build, or use tt_core_local_jar / publish tt_core to mavenLocal.'
+    )
 }
 
 rootProject.name = 'RegenResources'
