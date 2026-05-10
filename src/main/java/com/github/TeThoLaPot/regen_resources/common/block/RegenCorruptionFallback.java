@@ -1,6 +1,6 @@
 package com.github.TeThoLaPot.regen_resources.common.block;
 
-import com.github.TeThoLaPot.regen_resources.platform.forge.event.RegenRegenForgeEvents;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenRegenForgeEvents;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -32,6 +32,7 @@ public final class RegenCorruptionFallback {
             case NETHER, NETHER_PRESET -> Blocks.NETHERRACK.defaultBlockState();
             case END, END_PRESET -> Blocks.END_STONE.defaultBlockState();
             case DEBRIS, DEBRIS_PRESET -> Blocks.NETHERRACK.defaultBlockState();
+            case LOG_PRESET -> Blocks.OAK_LOG.defaultBlockState();
             case MIMIC -> Blocks.STONE.defaultBlockState();
         };
     }
@@ -43,6 +44,9 @@ public final class RegenCorruptionFallback {
     public static BlockState miningSampleFor(RegenVisual visual) {
         if (visual == RegenVisual.DEBRIS || visual == RegenVisual.DEBRIS_PRESET) {
             return Blocks.ANCIENT_DEBRIS.defaultBlockState();
+        }
+        if (visual == RegenVisual.LOG_PRESET) {
+            return Blocks.OAK_LOG.defaultBlockState();
         }
         return replacementFor(visual);
     }

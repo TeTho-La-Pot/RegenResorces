@@ -28,8 +28,17 @@ public final class RegenBlockMoveHooks {
         }
         CompoundTag prior = TT_core.getBlockData(level, pos);
         boolean hadPlacementTt = !prior.isEmpty();
+        byte priorSrc = RegenMineMarker.readSourceByte(prior);
         TT_core.removeBlockData(level, pos);
+        // ピストン移動中は一旦 MOVING_PISTON（flag 64）でマーカーを載せるが、確定設置は通常フラグなしの setBlock のため
+        // ここで「直前まで再生拒否だったら引き継ぐ」必要がある。
         if (physicallyMovedByPiston && !newState.isAir()) {
+            CompoundTag deny = new CompoundTag();
+            deny.putByte(RegenMineMarker.TT_SOURCE, RegenMineMarker.SRC_SURVIVAL);
+            TT_core.saveBlockData(level, pos, deny);
+        } else if (!physicallyMovedByPiston
+                && !newState.isAir()
+                && priorSrc == RegenMineMarker.SRC_SURVIVAL) {
             CompoundTag deny = new CompoundTag();
             deny.putByte(RegenMineMarker.TT_SOURCE, RegenMineMarker.SRC_SURVIVAL);
             TT_core.saveBlockData(level, pos, deny);

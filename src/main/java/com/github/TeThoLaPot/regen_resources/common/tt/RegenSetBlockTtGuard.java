@@ -1,7 +1,7 @@
 package com.github.TeThoLaPot.regen_resources.common.tt;
 
-import com.github.TeThoLaPot.regen_resources.platform.forge.event.RegenRegenForgeEvents;
-import com.github.TeThoLaPot.regen_resources.platform.forge.mixin.LevelMixin;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenRegenForgeEvents;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.mixin.LevelMixin;
 
 /**
  * {@link LevelMixin} が {@code Level#setBlock} 成功時に TT を消す際、

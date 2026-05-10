@@ -20,11 +20,13 @@ public enum RegenVisual implements StringRepresentable {
     DEEPSLATE_PRESET("deepslate_preset"),
     NETHER_PRESET("nether_preset"),
     END_PRESET("end_preset"),
-    DEBRIS_PRESET("debris_preset");
+    DEBRIS_PRESET("debris_preset"),
+    /** 原木系プリセット（blockstates / アイテム predicate は他プリセットと同列に追加）。 */
+    LOG_PRESET("log_preset");
 
     /** クリエイティブ用。{@code stone} と {@code stone_preset} など見た目が同じものは両方並べない。 */
     private static final List<RegenVisual> CREATIVE_ITEM_VARIANTS =
-            List.of(MIMIC, STONE_PRESET, DEEPSLATE_PRESET, NETHER_PRESET, END_PRESET, DEBRIS_PRESET);
+            List.of(MIMIC, STONE_PRESET, DEEPSLATE_PRESET, NETHER_PRESET, END_PRESET, DEBRIS_PRESET, LOG_PRESET);
 
     private final String id;
 

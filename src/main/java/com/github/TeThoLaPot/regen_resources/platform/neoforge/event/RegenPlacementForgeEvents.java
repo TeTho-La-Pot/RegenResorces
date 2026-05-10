@@ -1,0 +1,74 @@
+package com.github.TeThoLaPot.regen_resources.platform.neoforge.event;
+
+import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
+import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
+import com.github.TeThoLaPot.regen_resources.platform.RegenPlatformServices;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
+import com.github.TeThoLaPot.tt_core.TT_core;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.common.util.BlockSnapshot;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+
+/**
+ * 再生対象ブロックの設置時だけ TT に 1 バイトマーカーを載せる（チャンク全域のスキャンはしない）。
+ * {@link EventPriority#LOWEST}: 他 MOD のキャンセル後に実行。
+ */
+public final class RegenPlacementForgeEvents {
+
+    private RegenPlacementForgeEvents() {}
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onEntityPlace(BlockEvent.EntityPlaceEvent event) {
+        if (event instanceof BlockEvent.EntityMultiPlaceEvent multi) {
+            onMultiPlace(multi);
+            return;
+        }
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        maybeMark(level, event.getEntity(), event.getPos(), event.getPlacedBlock());
+    }
+
+    private static void onMultiPlace(BlockEvent.EntityMultiPlaceEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        Entity entity = event.getEntity();
+        for (BlockSnapshot snap : event.getReplacedBlockSnapshots()) {
+            maybeMark(level, entity, snap.getPos(), level.getBlockState(snap.getPos()));
+        }
+    }
+
+    private static void maybeMark(ServerLevel level, Entity entity, BlockPos pos, BlockState placed) {
+        ResourceLocation dim = level.dimension().location();
+        if (RegenRuleRegistry.firstMatch(dim, placed) == null) {
+            return;
+        }
+
+        byte marker;
+        if (entity instanceof Player player) {
+            marker = player.isCreative() ? RegenMineMarker.SRC_ELIGIBLE : RegenMineMarker.SRC_SURVIVAL;
+        } else if (entity == null) {
+            if (!RegenResourcesForgeConfig.COMMAND_LIKE_PLACEMENT_ELIGIBLE.get()) {
+                return;
+            }
+            marker = RegenMineMarker.SRC_ELIGIBLE;
+        } else {
+            return;
+        }
+
+        CompoundTag patch = new CompoundTag();
+        patch.putByte(RegenMineMarker.TT_SOURCE, marker);
+        TT_core.saveBlockData(level, pos, patch);
+        RegenPlatformServices.NETWORK.invalidateJadeProbe(level, pos);
+    }
+}
+

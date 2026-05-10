@@ -1,7 +1,8 @@
 package com.github.TeThoLaPot.regen_resources.common.item;
 
-import com.github.TeThoLaPot.regen_resources.platform.forge.event.RegenBlockBreakEvents;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenBlockBreakEvents;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
@@ -12,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,16 +31,24 @@ public class BreakStuffItem extends Item {
         super(properties);
     }
 
+    private static CompoundTag customTagCopy(ItemStack stack) {
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        return cd != null ? cd.copyTag() : new CompoundTag();
+    }
+
+    private static void applyCustomTag(ItemStack stack, CompoundTag tag) {
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
     public static void modeChange(ItemStack stack) {
-        stack.getOrCreateTag().putInt(MODE_TAG, modeNum(stack) < 1 ? modeNum(stack) + 1 : 0);
+        CompoundTag tag = customTagCopy(stack);
+        tag.putInt(MODE_TAG, modeNum(stack) < 1 ? modeNum(stack) + 1 : 0);
+        applyCustomTag(stack, tag);
     }
 
     /** 除去モードか（1 = ON）。イベント／モデルpredicate用。 */
     public static int modeNum(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        if (tag == null) {
-            return 0;
-        }
+        CompoundTag tag = customTagCopy(stack);
         return tag.getInt(MODE_TAG);
     }
 
@@ -61,7 +71,6 @@ public class BreakStuffItem extends Item {
             player.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
-        // 右クリックだけ（スニーク無し）は何もしない（使用アクションをロック）
         return InteractionResultHolder.pass(stack);
     }
 
@@ -72,14 +81,18 @@ public class BreakStuffItem extends Item {
 
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        if (!level.isClientSide() && stack.getTag() == null) {
-            stack.setTag(new CompoundTag());
-            stack.getTag().putInt(MODE_TAG, 0);
+        if (!level.isClientSide()) {
+            CompoundTag tag = customTagCopy(stack);
+            if (!tag.contains(MODE_TAG)) {
+                tag.putInt(MODE_TAG, 0);
+                applyCustomTag(stack, tag);
+            }
         }
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        Level level = context.level();
         if (level != null && level.isClientSide()) {
             Component sneakKey = Component.keybind("key.sneak").withStyle(ChatFormatting.DARK_PURPLE);
             Component useKey = Component.keybind("key.use").withStyle(ChatFormatting.DARK_PURPLE);
