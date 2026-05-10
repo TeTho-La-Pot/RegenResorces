@@ -27,6 +27,7 @@ public final class RegenResourcesForgeBootstrap {
         registerGameEvents();
         modEventBus.addListener(RegenResourcesForgeBootstrap::onCommonConfigLoading);
         modEventBus.addListener(RegenResourcesForgeBootstrap::onCommonConfigReloading);
+        modEventBus.addListener(RegenCreativeTabEvents::stripRegenShellItem);
         modEventBus.addListener(RegenResourcesNetwork::register);
         Re_Blocks.BLOCKS.register(modEventBus);
         Re_Blocks.BLOCK_ENTITY_TYPES.register(modEventBus);

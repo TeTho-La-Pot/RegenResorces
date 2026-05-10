@@ -2,8 +2,6 @@ package com.github.TeThoLaPot.regen_resources.common.block;
 
 import net.minecraft.util.StringRepresentable;
 
-import java.util.List;
-
 /**
  * `assets/.../blockstates/regen_block.json` の `visual=<name>` と一致させる。
  * 見た目切り替えのみ（プリセット/ディメンションルールは別管理）。
@@ -24,19 +22,10 @@ public enum RegenVisual implements StringRepresentable {
     /** 原木系プリセット（blockstates / アイテム predicate は他プリセットと同列に追加）。 */
     LOG_PRESET("log_preset");
 
-    /** クリエイティブ用。{@code stone} と {@code stone_preset} など見た目が同じものは両方並べない。 */
-    private static final List<RegenVisual> CREATIVE_ITEM_VARIANTS =
-            List.of(MIMIC, STONE_PRESET, DEEPSLATE_PRESET, NETHER_PRESET, END_PRESET, DEBRIS_PRESET, LOG_PRESET);
-
     private final String id;
 
     RegenVisual(String id) {
         this.id = id;
-    }
-
-    /** クリエタブのアイコン列に載せる代表バリアントのみ。 */
-    public static Iterable<RegenVisual> creativeItemVariants() {
-        return CREATIVE_ITEM_VARIANTS;
     }
 
     @Override
