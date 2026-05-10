@@ -1,9 +1,9 @@
 plugins {
+    id 'java'
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'net.minecraftforge.gradle' version '7.0.25'
     id 'org.spongepowered.mixin' version '0.7.+'
 }
 
@@ -14,11 +14,12 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
 
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
 
     mixin {
         add sourceSets.main, "${mod_id}.refmap.json"
@@ -27,31 +28,23 @@ minecraft {
 
     runs {
         configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'info'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${project.projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                mod_id {
-                    source sourceSets.main
-                }
-            }
+            workingDir.convention(layout.projectDirectory.dir('run'))
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'info'
+            systemProperty 'mixin.env.remapRefMap', 'true'
+            systemProperty 'mixin.env.refMapRemappingFile', "${project.projectDir}/build/createSrgToMcp/output.srg"
+            args '--mixin.config', "${mod_id}.mixins.json"
         }
-
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
+        register('client') {
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
-
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
+        register('server') {
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
         }
-
-        data {
-            workingDirectory project.file('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        register('data') {
+            workingDir = layout.projectDirectory.dir('run-data')
+            args '--mod', mod_id, '--all', '--output', layout.projectDirectory.dir('src/generated/resources'), '--existing', layout.projectDirectory.dir('src/main/resources')
         }
     }
 }
@@ -66,15 +59,20 @@ sourceSets {
 
 repositories {
     mavenLocal()
-    maven {
-        name = 'MinecraftForge'
-        url = 'https://maven.minecraftforge.net/'
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Sponge'
+                url = 'https://repo.spongepowered.org/repository/maven-public'
+            }
+        }
+        filter {
+            includeGroupAndSubgroups('org.spongepowered')
+        }
     }
-    maven {
-        name = 'ParchmentMC'
-        url = 'https://maven.parchmentmc.org'
-    }
-    // Jade (CurseMaven)
     maven {
         name = 'CurseMaven'
         url = 'https://www.cursemaven.com'
@@ -86,12 +84,10 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
     implementation fg.deobf("com.github.TeThoLaPot:tt_core:${tt_core_version}")
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
 
-    // Jade 公式（Forge）: implementation fg.deobf("curse.maven:jade-324717:${jade_id}")
-    // ※最終 jar に同梱されない（ソースセットのみパッケージング）。runClient は上記 mixin プロパティ必須。
     implementation fg.deobf("curse.maven:jade-324717:${jade_file_id}")
 }
 
