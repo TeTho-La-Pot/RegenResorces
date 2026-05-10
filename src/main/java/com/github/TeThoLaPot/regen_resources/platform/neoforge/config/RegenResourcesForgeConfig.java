@@ -34,15 +34,15 @@ public final class RegenResourcesForgeConfig {
             .define("changeAncientDebrisDrops", true);
 
     /**
-     * 旧挙動は「フォルダが空なら毎起動バニラ既定 JSON を書き戻す」だったため、JSON を消しても鉱石ルールが復活した。
-     * 既定 false: 空フォルダ = ルールゼロ（再生なし）。初回だけ既定を出したい場合は true。
+     * true のとき、組み込みの既定ファイル名（stone_preset.json など）が無ければ生成する（既存ファイルは上書きしない）。
+     * false なら自動生成せず、手動で JSON を置くまでルールゼロになり得る。
      */
     public static final ModConfigSpec.BooleanValue BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY = BUILDER
             .comment(
-                    "If true, when config/RegenResources/RegenPresets/ has no .json files, the mod writes built-in vanilla ore presets.",
-                    "If false, an empty preset folder loads zero rules (deleting all JSON disables regen until you add files again).")
+                    "If true, missing built-in preset JSON files under config/RegenResources/RegenPresets/ are created (existing files are never overwritten).",
+                    "If false, no automatic preset files are written.")
             .translation(CFG + "bootstrap_vanilla_presets_when_empty")
-            .define("bootstrapVanillaPresetsWhenEmpty", false);
+            .define("bootstrapVanillaPresetsWhenEmpty", true);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 

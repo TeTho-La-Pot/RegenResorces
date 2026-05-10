@@ -9,4 +9,14 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
+// 兄弟 ..TT_Core があれば Maven Local 不要で tt_core を解決（mod_version は gradle.properties で両者一致）
+def ttCoreIncluded = file('../TT_Core')
+if (ttCoreIncluded.isDirectory() && new File(ttCoreIncluded, 'settings.gradle').isFile()) {
+    includeBuild(ttCoreIncluded) {
+        dependencySubstitution {
+            substitute module('com.github.TeThoLaPot:tt_core') using project(':')
+        }
+    }
+}
+
 rootProject.name = 'RegenResources'

@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,11 +44,10 @@ public final class RegenPresetIo {
             """
                     RegenResources — RegenPresets folder
                     - Put preset .json files here (see mod documentation for alpha vs flat format).
-                    - Common config: .minecraft/config/regen_resources-common.toml (or your instance config folder).
-                    - bootstrapVanillaPresetsWhenEmpty: if true, when this folder has no .json files, the mod writes built-in vanilla ore presets once.
-                      If false, an empty folder means zero rules until you add JSON.
-                    このフォルダに .json を配置します（形式はマニュアル参照）。
-                    bootstrapVanillaPresetsWhenEmpty が true のときだけ、.json が無い場合にバニラ鉱石のサンプルが自動生成されます。
+                    - Common config: regen_resources-common.toml → bootstrapVanillaPresetsWhenEmpty
+                    - When that option is true, built-in filenames that are still missing (e.g. stone_preset.json) are created once; existing files are never overwritten.
+                    このフォルダに .json を配置します。
+                    bootstrapVanillaPresetsWhenEmpty が true のとき、不足している既定ファイル名だけサンプルが自動生成されます（上書きしません）。
                     """;
 
     private static void writePresetDirectoryReadmeIfAbsent(Path dir) {
@@ -66,21 +66,22 @@ public final class RegenPresetIo {
 
     private RegenPresetIo() {}
 
+    /** {@code FMLPaths.CONFIGDIR}/RegenResources/RegenPresets（開発時は {@code run/config} 配下＝ゲームの作業ディレクトリ依存）。 */
     public static Path rulesDir() {
         return FMLPaths.CONFIGDIR.get().resolve("RegenResources").resolve("RegenPresets");
     }
 
     /**
      * すべてのプリセットを読み、alpha / フラット混在可。
-     * <p>バニラ既定 JSON の自動生成は {@link RegenResourcesForgeConfig#BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY} が true
-     * かつフォルダに .json が無いときだけ（共通コンフィグ読込後に実行されること）。
+     * <p>バニラ既定 JSON は {@link RegenResourcesForgeConfig#BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY} が true のとき、
+     * 組み込みファイル名でまだ無いものだけ生成する（共通コンフィグ読込後に実行されること）。
      */
     public static List<RegenRule> loadOrCreateDefaults() {
         Path dir = rulesDir();
         try {
             Files.createDirectories(dir);
             writePresetDirectoryReadmeIfAbsent(dir);
-            bootstrapVanillaIfFolderEmpty(dir);
+            ensureVanillaDefaultPresets(dir);
         } catch (IOException ex) {
             LOGGER.warn("RegenResources: RegenPresets bootstrap: {}", ex.toString());
         }
@@ -109,7 +110,7 @@ public final class RegenPresetIo {
         }
         if (rules.isEmpty()) {
             LOGGER.info(
-                    "RegenResources: no regeneration rules loaded from {} (add .json presets there, or set bootstrapVanillaPresetsWhenEmpty=true in common config to auto-create vanilla ore presets).",
+                    "RegenResources: no regeneration rules loaded from {} (add .json presets or enable bootstrapVanillaPresetsWhenEmpty in common config).",
                     dir.toAbsolutePath());
         }
         return rules;
@@ -169,25 +170,32 @@ public final class RegenPresetIo {
         return 0;
     }
 
-    /** ディレクトリに json が無ければ、コンフィグが許すときだけ alpha 相当の既定プリセットを書き出す。 */
-    private static void bootstrapVanillaIfFolderEmpty(Path presetsDir) throws IOException {
+    /**
+     * コンフィグが許すとき、組み込みの既定ファイル名で存在しないものだけ alpha 形式のサンプルを書き出す（既存は上書きしない）。
+     */
+    private static void ensureVanillaDefaultPresets(Path presetsDir) throws IOException {
         if (!RegenResourcesForgeConfig.BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY.get()) {
             return;
         }
         Files.createDirectories(presetsDir);
-        if (!isEmptyJsonDirectory(presetsDir)) {
-            return;
+        int n = 0;
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("stone_preset.json"), GSON_PRETTY.toJson(vanillaStonePreset()));
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("deepslate_preset.json"), GSON_PRETTY.toJson(vanillaDeepslatePreset()));
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("nether_preset.json"), GSON_PRETTY.toJson(vanillaNetherPreset()));
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("end_preset.json"), GSON_PRETTY.toJson(emptyEndPreset()));
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("debris_preset.json"), GSON_PRETTY.toJson(vanillaDebrisPreset()));
+        n += writeDefaultJsonIfAbsent(presetsDir.resolve("log_preset.json"), GSON_PRETTY.toJson(vanillaLogPreset()));
+        if (n > 0) {
+            LOGGER.info("RegenResources: wrote {} missing default RegenPresets under {}", n, presetsDir);
         }
-        LOGGER.info("RegenResources: generating default RegenPresets (vanilla); disable with bootstrapVanillaPresetsWhenEmpty=false");
-        writeUtf8(presetsDir.resolve("stone_preset.json"), GSON_PRETTY.toJson(vanillaStonePreset()));
-        writeUtf8(presetsDir.resolve("deepslate_preset.json"), GSON_PRETTY.toJson(vanillaDeepslatePreset()));
-        writeUtf8(presetsDir.resolve("nether_preset.json"), GSON_PRETTY.toJson(vanillaNetherPreset()));
-        writeUtf8(presetsDir.resolve("end_preset.json"), GSON_PRETTY.toJson(emptyEndPreset()));
-        writeUtf8(presetsDir.resolve("debris_preset.json"), GSON_PRETTY.toJson(vanillaDebrisPreset()));
     }
 
-    private static boolean isEmptyJsonDirectory(Path dir) throws IOException {
-        return listJsonFilesSorted(dir).isEmpty();
+    private static int writeDefaultJsonIfAbsent(Path path, String utf8) throws IOException {
+        if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+            return 0;
+        }
+        writeUtf8(path, utf8);
+        return 1;
     }
 
     private static List<Path> listJsonFilesSorted(Path dir) throws IOException {
@@ -356,6 +364,25 @@ public final class RegenPresetIo {
         PresetFileRoot r = new PresetFileRoot();
         r.preset = "end_preset";
         r.entries = new ArrayList<>();
+        return r;
+    }
+
+    private static PresetFileRoot vanillaLogPreset() {
+        PresetFileRoot r = new PresetFileRoot();
+        r.preset = "log_preset";
+        r.entries = new ArrayList<>();
+        PresetEntryJson e = new PresetEntryJson();
+        e.tick = 1200L;
+        e.blocks = List.of(
+                "minecraft:oak_log",
+                "minecraft:spruce_log",
+                "minecraft:birch_log",
+                "minecraft:jungle_log",
+                "minecraft:acacia_log",
+                "minecraft:dark_oak_log",
+                "minecraft:mangrove_log",
+                "minecraft:cherry_log");
+        r.entries.add(e);
         return r;
     }
 

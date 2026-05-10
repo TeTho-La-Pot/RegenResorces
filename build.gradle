@@ -8,6 +8,10 @@ plugins {
 version = mod_version
 group = mod_group_id
 
+def ttCoreLocalProp = findProperty('tt_core_local_jar')?.toString()?.trim()
+def ttCoreLocalFile = (ttCoreLocalProp != null && !ttCoreLocalProp.isEmpty()) ? file(ttCoreLocalProp) : null
+def useLocalTtCoreJar = ttCoreLocalFile != null && ttCoreLocalFile.isFile()
+
 base {
     archivesName = mod_id
 }
@@ -23,11 +27,15 @@ runs {
         systemProperty 'forge.logging.markers', 'REGISTRIES'
         systemProperty 'forge.logging.console.level', 'info'
         systemProperty 'mixin.debug.export', 'false'
-        workingDirectory project.layout.projectDirectory.dir('run').dir(name)
+        // NeoGradle 既定の run/client・run/server だと FMLPaths.CONFIGDIR がそれぞれ別になり、
+        // RegenPresets の JSON も run/client/config/... 側にだけできる。単一の run/ にまとめて従来の run/config を使う。
+        workingDirectory project.layout.projectDirectory.dir('run')
         modSource project.sourceSets.main
     }
     client {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        // JDWP デバッガ + EarlyDisplay(GLFW) で Windows 上が EXCEPTION_ACCESS_VIOLATION になる事例の回避
+        jvmArguments '-Dfml.earlyprogresswindow=false'
     }
     server {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
@@ -59,7 +67,12 @@ repositories {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
-    implementation "com.github.TeThoLaPot:tt_core:${tt_core_version}"
+    if (useLocalTtCoreJar) {
+        logger.lifecycle("RegenResources: tt_core from local jar (${ttCoreLocalFile})")
+        implementation files(ttCoreLocalFile)
+    } else {
+        implementation "com.github.TeThoLaPot:tt_core:${tt_core_version}"
+    }
     implementation "curse.maven:jade-324717:${jade_file_id}"
     // Mixin は実行時に FML が読み込む。AP は NeoGradle の開発マッピングと相性が悪く参照解決に失敗するため付けない。
 }
