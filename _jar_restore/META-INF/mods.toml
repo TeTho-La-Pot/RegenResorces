@@ -1,0 +1,31 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="regen_resources"
+version="1.2.0"
+displayName="RegenResources"
+authors="TeTho_La_Pot"
+description='''Regeneration Resources Mod.'''
+
+[[dependencies.regen_resources]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.regen_resources]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.regen_resources]]
+modId="tt_core"
+mandatory=true
+versionRange="[0.1,)"
+ordering="NONE"
+side="BOTH"

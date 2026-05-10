@@ -48,6 +48,8 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', mod_id
+            // JDWP + EarlyDisplay(GLFW) で Windows 上の一部環境が EXCEPTION_ACCESS_VIOLATION になる事例があるため無効化
+            jvmArgs '-Dfml.earlyprogresswindow=false'
         }
 
         server {
@@ -89,6 +91,44 @@ repositories {
         }
     }
     mavenCentral()
+}
+
+// ../TT_Core があれば 1 コマンドで Maven Local へ出せる（Forge 1.20.1 ブランチ・mod_version=tt_core_version 前提）
+def ttCoreSiblingDir = file("${project.projectDir}/../TT_Core")
+def isWindows = System.getProperty('os.name', '').toLowerCase().contains('windows')
+if (ttCoreSiblingDir.directory) {
+    tasks.register('publishTtCoreForgeToMavenLocal', Exec) {
+        group = 'build setup'
+        description = 'Sibling TT_Core を publishToMavenLocal（Forge 1.20.1 / mod_version と gradle.properties の tt_core_version を揃えてから）'
+        workingDir ttCoreSiblingDir
+        if (isWindows) {
+            commandLine 'cmd', '/c', 'gradlew.bat', 'publishToMavenLocal', '--no-daemon'
+        } else {
+            commandLine "${ttCoreSiblingDir}/gradlew", 'publishToMavenLocal', '--no-daemon'
+        }
+    }
+}
+
+tasks.register('assertTtCoreMavenLocalPresent') {
+    group = 'verification'
+    description = 'tt_core が ~/.m2 に無いと分かりやすく失敗する（publish 忘れ防止）'
+    doLast {
+        def ver = findProperty('tt_core_version')?.toString()
+        if (ver == null || ver.trim().isEmpty()) {
+            throw new GradleException('tt_core_version が未定義です（gradle.properties を確認）')
+        }
+        def pom = file("${System.getProperty('user.home')}/.m2/repository/com/github/TeThoLaPot/tt_core/${ver}/tt_core-${ver}.pom")
+        if (!pom.exists()) {
+            throw new GradleException(
+                "Maven Local に tt_core がありません: ${pom.absolutePath}\n" +
+                '対処: (1) TT_Core で git checkout 1.20.1\n' +
+                '     (2) TT_Core の gradle.properties の mod_version が tt_core_version と同じか確認\n' +
+                '     (3) TT_Core で .\\gradlew publishToMavenLocal\n' +
+                '     または此処で: .\\gradlew publishTtCoreForgeToMavenLocal\n' +
+                'そのあと再度 compileJava を実行してください。'
+            )
+        }
+    }
 }
 
 dependencies {
@@ -154,6 +194,78 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+/** Parse ForgeGradle tsrg2 (output.tsrg) into srg -> MCP/official name. */
+Map<String, String> parseTsrg2(File tsrgFile) {
+    def lines = tsrgFile.readLines('UTF-8')
+    if (lines.isEmpty() || !lines[0].startsWith('tsrg2')) {
+        throw new GradleException("Unexpected tsrg header: ${tsrgFile}")
+    }
+    Map<String, String> srgToNamed = new LinkedHashMap<>()
+    for (int i = 1; i < lines.size(); i++) {
+        String line = lines[i]
+        if (!line.startsWith('\t') || line.startsWith('\t\t')) {
+            continue
+        }
+        String rest = line.substring(1).trim()
+        if (!rest || rest == 'static') {
+            continue
+        }
+        String[] parts = rest.split(/\s+/)
+        if (parts.length < 2) {
+            continue
+        }
+        String last = parts[parts.length - 1]
+        if (last ==~ /^m_\d+_$/) {
+            if (parts.length >= 3 && parts[1].startsWith('(')) {
+                srgToNamed.putIfAbsent(last, parts[0])
+            }
+        } else if (last ==~ /^(?:f|p)_\d+_$/) {
+            if (!parts[0].contains('(')) {
+                srgToNamed.putIfAbsent(last, parts[0])
+            }
+        }
+    }
+    return srgToNamed
+}
+
+tasks.register('remapDecompiledSrg') {
+    group = 'build setup'
+    description = 'JAR デコンパイル由来の SRG 名を、createMcpToSrg の命名に一括置換する'
+    dependsOn 'createMcpToSrg'
+    def tsrgFile = layout.buildDirectory.file('createMcpToSrg/output.tsrg')
+    def srcDir = file('src/main/java')
+
+    doLast {
+        def f = tsrgFile.get().asFile
+        if (!f.exists()) {
+            throw new GradleException("Missing ${f}. Run createMcpToSrg first.")
+        }
+        Map<String, String> mapping = parseTsrg2(f)
+        List<String> keys = new ArrayList<>(mapping.keySet())
+        keys.sort { String a, String b -> Integer.compare(b.length(), a.length()) }
+        int fileCount = 0
+        srcDir.eachFileRecurse { File java ->
+            if (!java.name.endsWith('.java')) {
+                return
+            }
+            String t = java.getText('UTF-8')
+            String orig = t
+            for (String srg : keys) {
+                String named = mapping[srg]
+                if (named != srg) {
+                    t = t.replace(srg, named)
+                }
+            }
+            if (t != orig) {
+                java.write(t, 'UTF-8')
+                fileCount++
+            }
+        }
+        logger.lifecycle("remapDecompiledSrg: updated {} files, {} mapping entries", fileCount, mapping.size())
+    }
+}
+
 tasks.named('compileJava') {
     dependsOn tasks.named('processResources')
+    dependsOn tasks.named('assertTtCoreMavenLocalPresent')
 }

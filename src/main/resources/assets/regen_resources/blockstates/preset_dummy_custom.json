@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "regen_resources:block/preset_dummy_custom" }
+  }
+}

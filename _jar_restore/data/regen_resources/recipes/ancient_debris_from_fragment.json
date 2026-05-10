@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AA",
+    "AA"
+  ],
+  "key": {
+    "A": {
+      "item": "regen_resources:ancient_fragment"
+    }
+  },
+  "result": {
+    "item": "minecraft:ancient_debris",
+    "count": 1
+  }
+}

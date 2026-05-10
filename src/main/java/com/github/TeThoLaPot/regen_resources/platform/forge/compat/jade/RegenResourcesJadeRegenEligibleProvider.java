@@ -1,6 +1,18 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  net.minecraft.ChatFormatting
+ *  net.minecraft.nbt.CompoundTag
+ *  net.minecraft.network.chat.Component
+ *  net.minecraft.resources.ResourceLocation
+ *  snownee.jade.api.BlockAccessor
+ *  snownee.jade.api.IBlockComponentProvider
+ *  snownee.jade.api.ITooltip
+ *  snownee.jade.api.config.IPluginConfig
+ */
 package com.github.TeThoLaPot.regen_resources.platform.forge.compat.jade;
 
-import com.github.TeThoLaPot.regen_resources.RegenResources;
 import com.github.TeThoLaPot.regen_resources.platform.forge.network.RegenJadeProbeClientCache;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -11,23 +23,19 @@ import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
 
-/**
- * RegenPresets 対象ブロックにカーソルを合わせたときに一行追加する。
- * ブロックエンティティありは {@link RegenResourcesJadeServerData}、無しは alpha と同様にサーバー権威データを独自パケットで受ける。
- */
-public enum RegenResourcesJadeRegenEligibleProvider implements IBlockComponentProvider {
+public enum RegenResourcesJadeRegenEligibleProvider implements IBlockComponentProvider
+{
     INSTANCE;
 
-    @Override
+
     public ResourceLocation getUid() {
-        return ResourceLocation.fromNamespaceAndPath(RegenResources.MOD_ID, "regen_eligible");
+        return ResourceLocation.fromNamespaceAndPath((String)"regen_resources", (String)"regen_eligible");
     }
 
-    @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-        CompoundTag srv = accessor.getServerData();
         CompoundTag effective;
-        if (srv.getBoolean(RegenResourcesJadeServerData.SYNC_RULE_MATCH)) {
+        CompoundTag srv = accessor.getServerData();
+        if (srv.getBoolean("regen_j_rule_match")) {
             effective = srv;
         } else {
             CompoundTag cached = RegenJadeProbeClientCache.get(accessor);
@@ -38,13 +46,13 @@ public enum RegenResourcesJadeRegenEligibleProvider implements IBlockComponentPr
                 return;
             }
         }
-        if (!effective.getBoolean(RegenResourcesJadeServerData.SYNC_RULE_MATCH)) {
+        if (!effective.getBoolean("regen_j_rule_match")) {
             return;
         }
-        if (effective.getBoolean(RegenResourcesJadeServerData.SYNC_ALLOWS_REGEN)) {
-            tooltip.add(Component.translatable("jade.regen_resources.regen_eligible").withStyle(ChatFormatting.GREEN));
+        if (effective.getBoolean("regen_j_allows_regen")) {
+            tooltip.add((Component)Component.translatable((String)"jade.regen_resources.regen_eligible").withStyle(ChatFormatting.GREEN));
         } else {
-            tooltip.add(Component.translatable("jade.regen_resources.regen_not_eligible").withStyle(ChatFormatting.RED));
+            tooltip.add((Component)Component.translatable((String)"jade.regen_resources.regen_not_eligible").withStyle(ChatFormatting.RED));
         }
     }
 }

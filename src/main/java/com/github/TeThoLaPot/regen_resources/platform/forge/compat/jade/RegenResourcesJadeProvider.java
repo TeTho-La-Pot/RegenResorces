@@ -1,12 +1,34 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  net.minecraft.core.registries.BuiltInRegistries
+ *  net.minecraft.nbt.CompoundTag
+ *  net.minecraft.network.chat.Component
+ *  net.minecraft.network.chat.MutableComponent
+ *  net.minecraft.resources.ResourceLocation
+ *  net.minecraft.world.item.ItemStack
+ *  net.minecraft.world.level.ItemLike
+ *  net.minecraft.world.level.block.Block
+ *  net.minecraft.world.level.block.Blocks
+ *  org.jetbrains.annotations.Nullable
+ *  snownee.jade.api.BlockAccessor
+ *  snownee.jade.api.IBlockComponentProvider
+ *  snownee.jade.api.ITooltip
+ *  snownee.jade.api.config.IPluginConfig
+ *  snownee.jade.api.ui.IElement
+ *  snownee.jade.api.ui.IElementHelper
+ */
 package com.github.TeThoLaPot.regen_resources.platform.forge.compat.jade;
 
-import com.github.TeThoLaPot.regen_resources.RegenResources;
 import com.github.TeThoLaPot.regen_resources.platform.forge.block.Re_Blocks;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
@@ -17,65 +39,54 @@ import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElementHelper;
 
-/**
- * 再生待ちブロックにカーソルを合わせたときの表示（残り時間、復元先）。
- * alpha の {@code RegenResourcesJadeProvider} を現行データ形式に合わせたもの。
- */
-public enum RegenResourcesJadeProvider implements IBlockComponentProvider {
+public enum RegenResourcesJadeProvider implements IBlockComponentProvider
+{
     INSTANCE;
 
-    @Override
+
     public ResourceLocation getUid() {
-        return ResourceLocation.fromNamespaceAndPath(RegenResources.MOD_ID, "regen_info");
+        return ResourceLocation.fromNamespaceAndPath((String)"regen_resources", (String)"regen_info");
     }
 
-    @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-        if (!accessor.getBlockState().is(Re_Blocks.REGEN_BLOCK.get())) {
+        String rl;
+        if (!accessor.getBlockState().is((Block)Re_Blocks.REGEN_BLOCK.get())) {
             return;
         }
         CompoundTag srv = accessor.getServerData();
-        long executeAt = srv.getLong(RegenResourcesJadeServerData.SYNC_EXECUTE_AT);
-        if (executeAt > 0) {
+        long executeAt = srv.getLong("regen_j_sync_execute_at");
+        if (executeAt > 0L) {
             long gt = accessor.getLevel().getGameTime();
             long remainingTicks = executeAt - gt;
-            if (remainingTicks > 0) {
-                int secondsRoundedUp = (int) Math.ceil(remainingTicks / 20.0);
-                tooltip.add(Component.translatable("jade.regen_resources.time_until_seconds", secondsRoundedUp));
+            if (remainingTicks > 0L) {
+                int secondsRoundedUp = (int)Math.ceil((double)remainingTicks / 20.0);
+                tooltip.add((Component)Component.translatable((String)"jade.regen_resources.time_until_seconds", (Object[])new Object[]{secondsRoundedUp}));
             } else {
-                tooltip.add(Component.translatable("jade.regen_resources.time_until_imminent"));
+                tooltip.add((Component)Component.translatable((String)"jade.regen_resources.time_until_imminent"));
             }
         }
-
-        String rl = srv.getString(RegenResourcesJadeServerData.SYNC_RESTORE_RL);
-        if (!rl.isEmpty()) {
-            ResourceLocation id = ResourceLocation.tryParse(rl);
-            Component targetName = id != null
-                    ? BuiltInRegistries.BLOCK.getOptional(id)
-                            .map(Block::getName)
-                            .orElse(Component.literal(rl))
+        if (!(rl = srv.getString("regen_j_sync_restore_rl")).isEmpty()) {
+            ResourceLocation id = ResourceLocation.tryParse((String)rl);
+            MutableComponent targetName = id != null
+                    ? BuiltInRegistries.BLOCK.getOptional(id).map(Block::getName).orElse(Component.literal(rl))
                     : Component.literal(rl);
-            tooltip.add(Component.translatable("jade.regen_resources.regen_target", targetName));
+            tooltip.add((Component)Component.translatable((String)"jade.regen_resources.regen_target", (Object[])new Object[]{targetName}));
         }
     }
 
-    @Override
-    public @Nullable IElement getIcon(BlockAccessor accessor, IPluginConfig config, IElement currentIcon) {
-        if (!accessor.getBlockState().is(Re_Blocks.REGEN_BLOCK.get())) {
+    @Nullable
+    public IElement getIcon(BlockAccessor accessor, IPluginConfig config, IElement currentIcon) {
+        ResourceLocation id;
+        if (!accessor.getBlockState().is((Block)Re_Blocks.REGEN_BLOCK.get())) {
             return null;
         }
-        String rl = accessor.getServerData().getString(RegenResourcesJadeServerData.SYNC_RESTORE_RL);
+        String rl = accessor.getServerData().getString("regen_j_sync_restore_rl");
         ItemStack stack = ItemStack.EMPTY;
-        if (!rl.isEmpty()) {
-            ResourceLocation id = ResourceLocation.tryParse(rl);
-            if (id != null) {
-                stack = BuiltInRegistries.BLOCK.getOptional(id)
-                        .map(b -> new ItemStack(b.asItem()))
-                        .orElse(ItemStack.EMPTY);
-            }
+        if (!rl.isEmpty() && (id = ResourceLocation.tryParse((String)rl)) != null) {
+            stack = BuiltInRegistries.BLOCK.getOptional(id).map(b -> new ItemStack((ItemLike)b.asItem())).orElse(ItemStack.EMPTY);
         }
         if (stack.isEmpty()) {
-            stack = new ItemStack(Blocks.STONE);
+            stack = new ItemStack((ItemLike)Blocks.STONE);
         }
         return IElementHelper.get().item(stack);
     }

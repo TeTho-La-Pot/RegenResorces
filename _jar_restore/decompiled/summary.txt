@@ -1,0 +1,2 @@
+Summary for c:\Users\syou1\curseforge\minecraft\Instances\debug\mods\regen_resources-1.2.0.jar
+Decompiled with CFR 0.152
