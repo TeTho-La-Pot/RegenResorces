@@ -14,7 +14,13 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+// tt_core 依存 JAR が Java 21。Forge 1.20.1 のみ別言語にしたい場合も、参照できなければ意味がないため既定は 21
+def _javaOverride = findProperty('java_language_version')?.toString()?.trim()
+if (_javaOverride != null && !_javaOverride.isEmpty()) {
+    java.toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(_javaOverride))
+} else {
+    java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
 
 minecraft {
     mappings channel: mapping_channel, version: mapping_version
