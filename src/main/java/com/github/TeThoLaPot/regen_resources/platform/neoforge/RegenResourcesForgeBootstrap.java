@@ -7,14 +7,19 @@ import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenPrese
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.OreHarvesterCompatForgeEvents;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenBlockBreakEvents;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenMiningDelegateForgeEvents;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenMassBreakBugWorkaround;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenPlacementForgeEvents;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenRegenForgeEvents;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenResourcesReloadEvents;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.item.Re_Items;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.loot.ReLootModifiers;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.client.model.RegenCompositeSpriteSourceRegistry;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.network.RegenResourcesNetwork;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 
 /** NeoForge：DeferredRegister とネットワーク登録。 */
@@ -23,6 +28,9 @@ public final class RegenResourcesForgeBootstrap {
     private RegenResourcesForgeBootstrap() {}
 
     public static void bootstrap(IEventBus modEventBus) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            RegenCompositeSpriteSourceRegistry.ensureRegistered();
+        }
         RegenPlatformServices.install(new RegenForgePlatformConfig(), new RegenForgePlatformNetwork());
         registerGameEvents();
         modEventBus.addListener(RegenResourcesForgeBootstrap::onCommonConfigLoading);
@@ -42,6 +50,8 @@ public final class RegenResourcesForgeBootstrap {
         NeoForge.EVENT_BUS.register(RegenMiningDelegateForgeEvents.class);
         NeoForge.EVENT_BUS.register(RegenPlacementForgeEvents.class);
         NeoForge.EVENT_BUS.register(RegenRegenForgeEvents.class);
+        NeoForge.EVENT_BUS.register(RegenResourcesReloadEvents.class);
+        NeoForge.EVENT_BUS.register(RegenMassBreakBugWorkaround.class);
     }
 
     /**

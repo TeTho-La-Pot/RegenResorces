@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "minecraft:block/oak_log"
-  }
+  "parent": "regen_resources:block/preset_dummy_stripped_log"
 }

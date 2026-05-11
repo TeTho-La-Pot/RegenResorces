@@ -1,58 +1,134 @@
+/*
+ * Decompiled with CFR 0.152.
+ * 
+ * Could not load the following classes:
+ *  com.github.TeThoLaPot.tt_core.TT_core
+ *  net.minecraft.core.BlockPos
+ *  net.minecraft.core.registries.BuiltInRegistries
+ *  net.minecraft.resources.ResourceLocation
+ *  net.minecraft.server.level.ServerLevel
+ *  net.minecraft.world.level.BlockGetter
+ *  net.minecraft.world.level.block.Block
+ *  net.minecraft.world.level.block.Blocks
+ *  net.minecraft.world.level.block.entity.BlockEntity
+ *  net.minecraft.world.level.block.state.BlockState
+ *  org.jetbrains.annotations.Nullable
+ */
 package com.github.TeThoLaPot.regen_resources.common.block;
 
-import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenRegenForgeEvents;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenBlockEntity;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenBlocks;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenCustomVisualSpec;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenStrippedLogResolver;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenVisual;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * TT / 永続タスクが破損・欠落したとき、再生シェルをプリセットに応じた石の下地ブロックへ置き換える。
- * <p>{@link RegenVisual#DEBRIS} / {@link RegenVisual#DEBRIS_PRESET} は仕様としてネザーラック。
- */
 public final class RegenCorruptionFallback {
-
-    /** {@link RegenRegenForgeEvents} と同じキー。 */
     public static final String TT_EXECUTE_AT = "execute_at";
-
-    /** 設置直後の TT 書き込み待ち・読込順のばらつき用（約 2 秒）。 */
     public static final int MIN_WATCHDOG_WARMUP_TICKS = 40;
-
-    /** 実行予定 tick 超過後、executor の実行ラグを吸収する余裕（約 2 秒）。 */
     public static final int POST_EXECUTE_GRACE_TICKS = 40;
 
-    private RegenCorruptionFallback() {}
+    private RegenCorruptionFallback() {
+    }
 
     public static BlockState replacementFor(RegenVisual visual) {
+        return RegenCorruptionFallback.replacementFor(visual, null, null);
+    }
+
+    public static BlockState replacementFor(RegenVisual visual, @Nullable ResourceLocation strippedBlockId) {
+        return RegenCorruptionFallback.replacementFor(visual, strippedBlockId, null);
+    }
+
+    public static BlockState replacementFor(RegenVisual visual, @Nullable ResourceLocation strippedBlockId, @Nullable RegenCustomVisualSpec customSpec) {
         return switch (visual) {
-            case STONE, STONE_PRESET -> Blocks.STONE.defaultBlockState();
-            case DEEPSLATE, DEEPSLATE_PRESET -> Blocks.DEEPSLATE.defaultBlockState();
-            case NETHER, NETHER_PRESET -> Blocks.NETHERRACK.defaultBlockState();
-            case END, END_PRESET -> Blocks.END_STONE.defaultBlockState();
-            case DEBRIS, DEBRIS_PRESET -> Blocks.NETHERRACK.defaultBlockState();
-            case LOG_PRESET -> Blocks.OAK_LOG.defaultBlockState();
-            case CUSTOM_PRESET -> Blocks.STONE.defaultBlockState();
-            case MIMIC -> Blocks.STONE.defaultBlockState();
+            case RegenVisual.STONE, RegenVisual.STONE_PRESET -> Blocks.STONE.defaultBlockState();
+            case RegenVisual.DEEPSLATE, RegenVisual.DEEPSLATE_PRESET -> Blocks.DEEPSLATE.defaultBlockState();
+            case RegenVisual.NETHER, RegenVisual.NETHER_PRESET -> Blocks.NETHERRACK.defaultBlockState();
+            case RegenVisual.END, RegenVisual.END_PRESET -> Blocks.END_STONE.defaultBlockState();
+            case RegenVisual.DEBRIS, RegenVisual.DEBRIS_PRESET -> Blocks.NETHERRACK.defaultBlockState();
+            case RegenVisual.MIMIC -> Blocks.STONE.defaultBlockState();
+            case RegenVisual.STRIPPED_LOG, RegenVisual.STRIPPED_LOG_PRESET -> RegenCorruptionFallback.strippedLogState(strippedBlockId);
+            case RegenVisual.CUSTOM, RegenVisual.CUSTOM_PRESET -> RegenCorruptionFallback.customSampleState(customSpec);
         };
     }
 
-    /**
-     * プリセット別の採掘速度・適正ツールの参照先。{@link #replacementFor} と同じブロックだが、
-     * {@code debris} / {@code debris_preset} のみ古代の残骸を参照する（破損時の設置はネザーラックのまま）。
-     */
+    private static BlockState strippedLogState(@Nullable ResourceLocation strippedBlockId) {
+        Block b = RegenStrippedLogResolver.fromId(strippedBlockId);
+        if (b != null) {
+            return b.defaultBlockState();
+        }
+        return Blocks.STRIPPED_OAK_LOG.defaultBlockState();
+    }
+
+    private static BlockState customSampleState(@Nullable RegenCustomVisualSpec customSpec) {
+        if (customSpec != null && customSpec.miningSampleBlockId() != null) {
+            Block b = BuiltInRegistries.BLOCK.get(customSpec.miningSampleBlockId());
+            if (b != null && b != Blocks.AIR) {
+                return b.defaultBlockState();
+            }
+        }
+        return Blocks.STONE.defaultBlockState();
+    }
+
     public static BlockState miningSampleFor(RegenVisual visual) {
+        return RegenCorruptionFallback.miningSampleFor(visual, (ResourceLocation)null, null);
+    }
+
+    public static BlockState miningSampleFor(RegenVisual visual, @Nullable ResourceLocation strippedBlockId) {
+        return RegenCorruptionFallback.miningSampleFor(visual, strippedBlockId, null);
+    }
+
+    public static BlockState miningSampleFor(RegenVisual visual, @Nullable ResourceLocation strippedBlockId, @Nullable RegenCustomVisualSpec customSpec) {
         if (visual == RegenVisual.DEBRIS || visual == RegenVisual.DEBRIS_PRESET) {
             return Blocks.ANCIENT_DEBRIS.defaultBlockState();
         }
-        if (visual == RegenVisual.LOG_PRESET) {
-            return Blocks.OAK_LOG.defaultBlockState();
+        if (visual == RegenVisual.STRIPPED_LOG || visual == RegenVisual.STRIPPED_LOG_PRESET) {
+            return RegenCorruptionFallback.strippedLogState(strippedBlockId);
         }
-        if (visual == RegenVisual.CUSTOM_PRESET) {
-            return Blocks.STONE.defaultBlockState();
+        if (visual == RegenVisual.CUSTOM || visual == RegenVisual.CUSTOM_PRESET) {
+            return RegenCorruptionFallback.customSampleState(customSpec);
         }
-        return replacementFor(visual);
+        return RegenCorruptionFallback.replacementFor(visual);
+    }
+
+    @Nullable
+    public static ResourceLocation strippedIdFromBE(@Nullable BlockGetter level, @Nullable BlockPos pos) {
+        if (level == null || pos == null) {
+            return null;
+        }
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof RegenBlockEntity) {
+            RegenBlockEntity rbe = (RegenBlockEntity)be;
+            return rbe.getStrippedBlockId();
+        }
+        return null;
+    }
+
+    @Nullable
+    public static RegenCustomVisualSpec customSpecFromBE(@Nullable BlockGetter level, @Nullable BlockPos pos) {
+        if (level == null || pos == null) {
+            return null;
+        }
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof RegenBlockEntity) {
+            RegenBlockEntity rbe = (RegenBlockEntity)be;
+            return rbe.getCustomVisualSpec();
+        }
+        return null;
+    }
+
+    public static BlockState miningSampleFor(RegenVisual visual, @Nullable BlockGetter level, @Nullable BlockPos pos) {
+        return RegenCorruptionFallback.miningSampleFor(visual, RegenCorruptionFallback.strippedIdFromBE(level, pos), RegenCorruptionFallback.customSpecFromBE(level, pos));
     }
 
     public static void apply(ServerLevel level, BlockPos pos, BlockState regenState) {
@@ -60,9 +136,12 @@ public final class RegenCorruptionFallback {
             return;
         }
         RegenVisual visual = regenState.getValue(RegenBlocks.VISUAL);
-        BlockState replacement = replacementFor(visual);
-        TT_core.removeBlockData(level, pos);
-        int flags = Block.UPDATE_NEIGHBORS | Block.UPDATE_CLIENTS;
+        ResourceLocation strippedId = RegenCorruptionFallback.strippedIdFromBE((BlockGetter)level, pos);
+        RegenCustomVisualSpec customSpec = RegenCorruptionFallback.customSpecFromBE((BlockGetter)level, pos);
+        BlockState replacement = RegenCorruptionFallback.replacementFor(visual, strippedId, customSpec);
+        TT_core.removeBlockData((ServerLevel)level, (BlockPos)pos);
+        int flags = 3;
         level.setBlock(pos, replacement, flags);
     }
 }
+

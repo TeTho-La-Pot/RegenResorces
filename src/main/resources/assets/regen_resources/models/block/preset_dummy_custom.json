@@ -1,6 +1,3 @@
 {
-  "textures": {
-    "particle": "minecraft:block/stone"
-  },
-  "elements": []
+  "parent": "regen_resources:block/regen_preset"
 }

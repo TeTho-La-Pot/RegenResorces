@@ -1,5 +1,7 @@
 {
   "variants": {
-    "": { "model": "regen_resources:block/preset_dummy_stripped_log" }
+    "axis=y": { "model": "regen_resources:block/preset_dummy_stripped_log" },
+    "axis=z": { "model": "regen_resources:block/preset_dummy_stripped_log", "x": 90 },
+    "axis=x": { "model": "regen_resources:block/preset_dummy_stripped_log", "x": 90, "y": 90 }
   }
 }

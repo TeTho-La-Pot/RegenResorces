@@ -12,7 +12,9 @@
     { "predicate": { "regen_resources:regen_visual": 8 }, "model": "regen_resources:block/n_regen_preset" },
     { "predicate": { "regen_resources:regen_visual": 9 }, "model": "regen_resources:block/e_regen_preset" },
     { "predicate": { "regen_resources:regen_visual": 10 }, "model": "regen_resources:block/debris_regen_preset" },
-    { "predicate": { "regen_resources:regen_visual": 11 }, "model": "regen_resources:block/log_regen_preset" },
-    { "predicate": { "regen_resources:regen_visual": 12 }, "model": "regen_resources:block/regen_preset" }
+    { "predicate": { "regen_resources:regen_visual": 11 }, "model": "regen_resources:block/regen_stripped_log" },
+    { "predicate": { "regen_resources:regen_visual": 12 }, "model": "regen_resources:block/regen_stripped_log" },
+    { "predicate": { "regen_resources:regen_visual": 13 }, "model": "regen_resources:block/regen_custom" },
+    { "predicate": { "regen_resources:regen_visual": 14 }, "model": "regen_resources:block/regen_custom" }
   ]
 }

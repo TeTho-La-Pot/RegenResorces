@@ -14,7 +14,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * {@link Level#setBlock} が経由しないピストン系更新を拾う（{@code LevelChunk#setBlockState(..., movedByPiston)}）。
+ * {@link Level#setBlock} が経由しないピストン系更新を拾う（{@code LevelChunk#setBlockState(..., isMoving)} のピストン経路）。
+ * <p>1.20.1 Forge の {@code LevelChunkMixin} と同じく、{@code isMovedByPiston==true} のときだけ
+ * {@link com.github.TeThoLaPot.regen_resources.common.tt.RegenBlockMoveHooks#afterMutation} を呼ぶ。
  */
 @Mixin(LevelChunk.class)
 public abstract class LevelChunkMixin {

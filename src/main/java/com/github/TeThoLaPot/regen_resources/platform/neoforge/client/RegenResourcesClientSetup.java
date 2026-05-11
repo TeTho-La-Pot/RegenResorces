@@ -14,6 +14,7 @@ public final class RegenResourcesClientSetup {
 
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            RegenStrippedCompositeWarmup.register();
             ItemProperties.register(
                     Re_Items.BREAK_STUFF.get(),
                     ResourceLocation.fromNamespaceAndPath(RegenResources.MOD_ID, "mode"),

@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.github.TeThoLaPot.regen_resources.platform.neoforge.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "regen_resources.refmap.json",
+
+  "mixins": [
+    "LevelMixin",
+    "LevelChunkMixin",
+    "PistonMovingBlockEntityMixin"
+  ],
+  "client": [
+    "client.MultiPlayerGameModeMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

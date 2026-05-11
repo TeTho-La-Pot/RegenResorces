@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "XOX",
+    "OXO",
+    "XOX"
+  ],
+  "key": {
+    "X": {
+      "item": "minecraft:stick"
+    },
+    "O": {
+      "item": "minecraft:deepslate"
+    }
+  },
+  "result": {
+    "item": "regen_resources:preset_dummy_deepslate",
+    "count": 16
+  }
+}

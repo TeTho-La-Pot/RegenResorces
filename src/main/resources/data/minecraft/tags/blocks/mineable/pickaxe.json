@@ -7,7 +7,6 @@
     "regen_resources:preset_dummy_nether",
     "regen_resources:preset_dummy_end",
     "regen_resources:preset_dummy_debris",
-    "regen_resources:preset_dummy_stripped_log",
     "regen_resources:preset_dummy_custom"
   ]
 }

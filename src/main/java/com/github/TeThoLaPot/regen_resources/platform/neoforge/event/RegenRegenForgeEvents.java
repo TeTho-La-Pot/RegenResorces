@@ -1,7 +1,11 @@
 package com.github.TeThoLaPot.regen_resources.platform.neoforge.event;
 
-import com.github.TeThoLaPot.regen_resources.common.block.RegenCorruptionFallback;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenBlockEntity;
 import com.github.TeThoLaPot.regen_resources.common.block.RegenBlocks;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenCorruptionFallback;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenCustomVisualSpec;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenStrippedLogResolver;
+import com.github.TeThoLaPot.regen_resources.common.block.RegenVisual;
 import com.github.TeThoLaPot.regen_resources.common.item.BreakStuffItem;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
@@ -10,6 +14,7 @@ import com.github.TeThoLaPot.regen_resources.common.tt.RegenSetBlockTtGuard;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.RegenResourcesForgeBootstrap;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.block.Re_Blocks;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.network.RegenShellServerSync;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import com.github.TeThoLaPot.tt_core.api.ITTTaskExecutor;
 import com.github.TeThoLaPot.tt_core.api.TTDataUtils;
@@ -24,8 +29,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -34,6 +42,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 
 import java.util.UUID;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * NeoForge サーバーイベント配線。
@@ -98,13 +108,18 @@ public final class RegenRegenForgeEvents {
         }
 
         BlockPos posImmutable = pos.immutable();
-        if (!RegenOreMineEligibility.allows(level, posImmutable)) {
+        if (!RegenOreMineEligibility.allows(level, posImmutable, rule)) {
             return;
         }
 
-        // OreHarvester は起点の BreakEvent だけを使い、周辺鉱石は独自処理で壊すため
-        // こちらの「キャンセル＋手動ドロップ」は二重ドロップの原因になる。互換側へ任せる。
-        if (ModList.get().isLoaded("oreharvester")) {
+        if (ModList.get().isLoaded("oreharvester")
+                && (serverPlayer.isCrouching()
+                        || RegenSneakMineTracker.wasSneakMining(serverPlayer, posImmutable)
+                        || OreHarvesterChainProbe.willChain(level, serverPlayer))) {
+            return;
+        }
+        if (FtbUltimineChainProbe.isAvailable()
+                && (FtbUltimineChainProbe.isChaining() || FtbUltimineChainProbe.isPressed(serverPlayer))) {
             return;
         }
 
@@ -115,8 +130,9 @@ public final class RegenRegenForgeEvents {
             // 他 MOD がキャンセルして自前で破壊する場合（OreHarvester 等）:
             // こちらはドロップ生成を行わず、次 tick に「空気化していれば」シェル設置だけ行う。
             // （既に誰かがシェルを置いている／TT が入っている場合は commit 側のガードで弾かれる）
+            ServerPlayer breaker = serverPlayer;
             level.getServer()
-                    .execute(() -> commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot));
+                    .execute(() -> commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot, null, breaker));
             return;
         }
 
@@ -126,20 +142,42 @@ public final class RegenRegenForgeEvents {
             return;
         }
 
-        commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot);
+        commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot, null, serverPlayer);
     }
 
     /**
      * alpha の {@code commitOreBreakRegen} と同じ経路: 実行キューに載せてから TT・シェル設置。
      */
     public static void commitOreBreakRegen(ServerLevel level, BlockPos pos, BlockState brokenState, RegenRule rule) {
+        commitOreBreakRegen(level, pos, brokenState, rule, null, null);
+    }
+
+    /**
+     * @param forcedPriorSrc OreHarvester クラスタなどでブロックごとの {@link RegenMineMarker#TT_SOURCE} を明示するとき（null なら TT から読む）。
+     */
+    public static void commitOreBreakRegen(
+            ServerLevel level, BlockPos pos, BlockState brokenState, RegenRule rule, @Nullable Byte forcedPriorSrc) {
+        commitOreBreakRegen(level, pos, brokenState, rule, forcedPriorSrc, null);
+    }
+
+    /**
+     * @param primaryViewer 見た目同期の明示宛先（多くは採掘した {@link ServerPlayer}）。NeoForge のチャンクトラッキングから漏れても必ず届ける。
+     */
+    public static void commitOreBreakRegen(
+            ServerLevel level,
+            BlockPos pos,
+            BlockState brokenState,
+            RegenRule rule,
+            @Nullable Byte forcedPriorSrc,
+            @Nullable ServerPlayer primaryViewer) {
         if (!level.getBlockState(pos).isAir()) {
             return;
         }
 
         // 以前のサイクルのキュー・ブロックマップを残すとタスクが複数走り、復元タイミングが不定になる
         CompoundTag priorPlacement = TT_core.getBlockData(level, pos);
-        byte sourceSnap = RegenMineMarker.readSourceByte(priorPlacement);
+        byte sourceSnap =
+                forcedPriorSrc != null ? forcedPriorSrc.byteValue() : RegenMineMarker.readSourceByte(priorPlacement);
 
         TT_core.removeBlockData(level, pos);
 
@@ -156,12 +194,62 @@ public final class RegenRegenForgeEvents {
         TT_core.saveBlockData(level, pos, data);
         TTDataBank.schedulePersistentTask(level, EXECUTOR_ID, rule.delayTicks(), data.copy());
 
+        RegenVisual visual = rule.visual();
+        ResourceLocation strippedId = null;
+        if (visual == RegenVisual.STRIPPED_LOG_PRESET || visual == RegenVisual.STRIPPED_LOG) {
+            strippedId = RegenStrippedLogResolver.resolveStrippedId(brokenState);
+            RegenBlocks.preparePendingStrippedId(pos, strippedId);
+        }
+        RegenCustomVisualSpec customSpec = rule.customVisualSpec();
+        boolean sendCustomPending =
+                (visual == RegenVisual.CUSTOM_PRESET || visual == RegenVisual.CUSTOM) && customSpec != null;
+        if (sendCustomPending) {
+            RegenBlocks.preparePendingCustomSpec(pos, customSpec);
+        }
+
+        final BlockPos shellAt = pos.immutable();
+
+        // 視距離フォールバック付きで pending を「setBlock の前」に配る（1.20.1 の TRACKING_CHUNK 相当）。
+        boolean sendStrippedPending =
+                strippedId != null && (visual == RegenVisual.STRIPPED_LOG_PRESET || visual == RegenVisual.STRIPPED_LOG);
+        RegenShellServerSync.broadcastShellPendingPayloads(
+                level, shellAt, strippedId, sendStrippedPending, customSpec, sendCustomPending);
+        RegenShellServerSync.alsoSendShellPendingToPrimary(
+                level, primaryViewer, shellAt, strippedId, sendStrippedPending, customSpec, sendCustomPending);
+
         BlockState waiting =
-                Re_Blocks.REGEN_BLOCK.get().defaultBlockState().setValue(RegenBlocks.VISUAL, rule.visual());
+                Re_Blocks.REGEN_BLOCK.get()
+                        .defaultBlockState()
+                        .setValue(RegenBlocks.VISUAL, visual)
+                        .setValue(RegenBlocks.AXIS, axisFromBroken(brokenState));
         int update = Block.UPDATE_NEIGHBORS | Block.UPDATE_CLIENTS;
         try (RegenSetBlockTtGuard ignored = RegenSetBlockTtGuard.acquire()) {
             level.setBlock(pos, waiting, update);
         }
+
+        if (strippedId != null) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof RegenBlockEntity rbe && rbe.getStrippedBlockId() == null) {
+                rbe.setStrippedBlockId(strippedId);
+            }
+        }
+        if (customSpec != null && (visual == RegenVisual.CUSTOM_PRESET || visual == RegenVisual.CUSTOM)) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof RegenBlockEntity rbe && rbe.getCustomVisualSpec() == null) {
+                rbe.setCustomVisualSpec(customSpec);
+            }
+        }
+
+        // BE データの明示再送（採掘者へも別経路）。
+        RegenShellServerSync.broadcastBlockEntityToChunkTrackers(level, shellAt);
+        RegenShellServerSync.alsoSendBlockEntityToPrimary(level, primaryViewer, shellAt);
+    }
+
+    private static Direction.Axis axisFromBroken(BlockState brokenState) {
+        if (brokenState.hasProperty(RotatedPillarBlock.AXIS)) {
+            return brokenState.getValue(RotatedPillarBlock.AXIS);
+        }
+        return Direction.Axis.Y;
     }
 
     private static boolean holdsBreakStuffRemoveMode(Player player) {

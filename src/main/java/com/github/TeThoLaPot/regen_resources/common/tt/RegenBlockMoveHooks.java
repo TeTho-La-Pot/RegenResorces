@@ -9,10 +9,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * ワールド上のブロック変化（ピストン移動など）後に TT を整合させる。
- * <p>データだけ削除すると {@link com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker#SRC_IMPLICIT} となり、
- * コンフィグで自然再生が許可されている場合は「動かした鉱石」を掘ってもまた再生シェルが付く。
- * Regen_Ore 系はブロック変化でフラグを立て／消してこの穴を塞いでいる。
+ * ワールド上のブロック変化後に TT を整合させる。1.20.1 Forge 版と同一ロジックを維持する。
+ * <p><b>1.20.1 の範囲</b>：{@link RegenMineMarker#SRC_SURVIVAL}（「自然再生 ON でも採掘後に再生シェルを置かない」）を付けるのは
+ * <b>ピストンによる物理移動として検知できた場合だけ</b>（{@link net.minecraft.world.level.block.Block#UPDATE_MOVE_BY_PISTON}
+ * が付いた {@link net.minecraft.world.level.Level#setBlock}、または {@link net.minecraft.world.level.chunk.LevelChunk#setBlockState}
+ * の moved-by-piston 経路）。一般的な設置／破壊の {@code setBlock} で survival を書く処理はしない。
+ * <p>なおすべての成功的な {@link net.minecraft.world.level.Level#setBlock} で当座標の TT はいったん削除される（1.20.1 同等）。
+ * <p>1.21 補足：{@link net.minecraft.world.level.block.piston.PistonMovingBlockEntity#finalTick()} は {@code setBlock(..., 3)} のみで
+ * {@code UPDATE_MOVE_BY_PISTON} が付かない。そのため {@link com.github.TeThoLaPot.regen_resources.platform.neoforge.mixin.LevelMixin} で
+ * 「直前の状態が {@link net.minecraft.world.level.block.Blocks#MOVING_PISTON}」かつ「配置後が非空気」ならピストン経路と同等に扱う。
  */
 public final class RegenBlockMoveHooks {
 
@@ -28,22 +33,12 @@ public final class RegenBlockMoveHooks {
         }
         CompoundTag prior = TT_core.getBlockData(level, pos);
         boolean hadPlacementTt = !prior.isEmpty();
-        byte priorSrc = RegenMineMarker.readSourceByte(prior);
         TT_core.removeBlockData(level, pos);
-        // ピストン移動中は一旦 MOVING_PISTON（flag 64）でマーカーを載せるが、確定設置は通常フラグなしの setBlock のため
-        // ここで「直前まで再生拒否だったら引き継ぐ」必要がある。
         if (physicallyMovedByPiston && !newState.isAir()) {
             CompoundTag deny = new CompoundTag();
             deny.putByte(RegenMineMarker.TT_SOURCE, RegenMineMarker.SRC_SURVIVAL);
             TT_core.saveBlockData(level, pos, deny);
-        } else if (!physicallyMovedByPiston
-                && !newState.isAir()
-                && priorSrc == RegenMineMarker.SRC_SURVIVAL) {
-            CompoundTag deny = new CompoundTag();
-            deny.putByte(RegenMineMarker.TT_SOURCE, RegenMineMarker.SRC_SURVIVAL);
-            TT_core.saveBlockData(level, pos, deny);
         }
-        // Jade プローブ結果は TT・可否に依存する。破壊(空気)や TT 削除時はキャッシュだけが古くなりがちなので明示的に捨てる。
         if (physicallyMovedByPiston || newState.isAir() || hadPlacementTt) {
             RegenPlatformServices.NETWORK.invalidateJadeProbe(level, pos);
         }

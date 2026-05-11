@@ -33,6 +33,15 @@ public final class RegenResourcesForgeConfig {
             .translation(CFG + "change_ancient_debris_drops")
             .define("changeAncientDebrisDrops", true);
 
+    public static final ModConfigSpec.BooleanValue MASS_BREAK_BUG_WORKAROUND = BUILDER
+            .comment(
+                    "Workaround for vein-mining mods (e.g. OreHarvester) that misfire when crouch toggles mid-mining.",
+                    "When true: same-block sessions compare isCrouching() to the value at session start; on mismatch, ABORT_DESTROY_BLOCK and clear OH harvest cache.",
+                    "Each BreakSpeed tick also clears that cache when OreHarvester is loaded and the player is not in the crouch state OH expects (including oreHarvestWithoutSneak).",
+                    "Set to false once the upstream mod fixes its behavior.")
+            .translation(CFG + "mass_break_bug_workaround")
+            .define("massBreakBugWorkaround", true);
+
     /**
      * true のとき、組み込みの既定ファイル名（stone_preset.json など）が無ければ生成する（既存ファイルは上書きしない）。
      * false なら自動生成せず、手動で JSON を置くまでルールゼロになり得る。

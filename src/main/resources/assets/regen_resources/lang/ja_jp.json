@@ -12,7 +12,6 @@
   "config.regen_resources.allow_natural_generation_regen": "自然生成された資源ブロックを再生対象にする",
   "config.regen_resources.command_like_placement_eligible": "コマンド等の設置を再生対象として扱う",
   "config.regen_resources.change_ancient_debris_drops": "古代の残骸のドロップを変更する",
-  "config.regen_resources.bootstrap_vanilla_presets_when_empty": "プリセットフォルダが空のときバニラ資源の既定JSONを自動生成する",
   "creativetab.regen_resources_tab": "Regen Resources",
   "item.regen_resources.break_stuff": "破壊のオーブ",
   "item.regen_resources.ancient_fragment": "古代の破片",

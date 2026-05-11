@@ -1,6 +1,3 @@
 {
-  "textures": {
-    "particle": "minecraft:block/oak_log"
-  },
-  "elements": []
+  "parent": "regen_resources:block/regen_stripped_log"
 }

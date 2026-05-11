@@ -1,0 +1,28 @@
+{
+  "mappings": {
+    "com/github/TeThoLaPot/regen_resources/platform/neoforge/mixin/LevelMixin": {
+      "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z": "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z"
+    },
+    "com/github/TeThoLaPot/regen_resources/platform/neoforge/mixin/client/MultiPlayerGameModeMixin": {
+      "destroyBlock(Lnet/minecraft/core/BlockPos;)Z": "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;destroyBlock(Lnet/minecraft/core/BlockPos;)Z",
+      "continueDestroyBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)Z": "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;continueDestroyBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)Z"
+    },
+    "com/github/TeThoLaPot/regen_resources/platform/neoforge/mixin/LevelChunkMixin": {
+      "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;": "Lnet/minecraft/world/level/chunk/LevelChunk;setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;"
+    }
+  },
+  "data": {
+    "searge": {
+      "com/github/TeThoLaPot/regen_resources/platform/neoforge/mixin/LevelMixin": {
+        "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z": "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z"
+      },
+      "com/github/TeThoLaPot/regen_resources/platform/neoforge/mixin/client/MultiPlayerGameModeMixin": {
+        "destroyBlock(Lnet/minecraft/core/BlockPos;)Z": "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;destroyBlock(Lnet/minecraft/core/BlockPos;)Z",
+        "continueDestroyBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)Z": "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;continueDestroyBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)Z"
+      },
+      "com/github/TeThoLaPot/regen_resources/platform/neoforge/mixin/LevelChunkMixin": {
+        "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;": "Lnet/minecraft/world/level/chunk/LevelChunk;setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;"
+      }
+    }
+  }
+}

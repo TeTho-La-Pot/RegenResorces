@@ -31,7 +31,10 @@ final class RegenOreHarvest {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         ItemStack tool = player.getMainHandItem();
 
-        List<ItemStack> drops = Block.getDrops(state, level, pos, blockEntity, player, tool);
+        // ServerPlayerGameMode#destroyBlock と同様、適正ツールでない場合はドロップ・経験値・採掘統計を付与しない。
+        boolean canHarvest = state.canHarvestBlock(level, pos, player);
+        List<ItemStack> drops =
+                canHarvest ? Block.getDrops(state, level, pos, blockEntity, player, tool) : List.of();
 
         if (!destroySilently(level, pos)) {
             return false;
@@ -41,20 +44,22 @@ final class RegenOreHarvest {
 
         Vec3 spawn = player.position();
 
-        for (ItemStack drop : drops) {
-            if (!drop.isEmpty()) {
-                spawnItemNearFeet(level, player, spawn, drop.copy());
+        if (canHarvest) {
+            for (ItemStack drop : drops) {
+                if (!drop.isEmpty()) {
+                    spawnItemNearFeet(level, player, spawn, drop.copy());
+                }
             }
-        }
 
-        int rawExp = state.getExpDrop(level, pos, blockEntity, player, tool);
-        int exp = EnchantmentHelper.processBlockExperience(level, tool, rawExp);
-        if (exp > 0) {
-            state.getBlock().popExperience(level, BlockPos.containing(spawn), exp);
-        }
+            int rawExp = state.getExpDrop(level, pos, blockEntity, player, tool);
+            int exp = EnchantmentHelper.processBlockExperience(level, tool, rawExp);
+            if (exp > 0) {
+                state.getBlock().popExperience(level, BlockPos.containing(spawn), exp);
+            }
 
-        player.awardStat(Stats.BLOCK_MINED.get(state.getBlock()));
-        player.causeFoodExhaustion(0.005F);
+            player.awardStat(Stats.BLOCK_MINED.get(state.getBlock()));
+            player.causeFoodExhaustion(0.005F);
+        }
 
         return true;
     }

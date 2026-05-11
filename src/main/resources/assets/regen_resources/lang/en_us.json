@@ -12,7 +12,6 @@
   "config.regen_resources.allow_natural_generation_regen": "Allow natural world-gen regeneration",
   "config.regen_resources.command_like_placement_eligible": "Command-like placement counts as eligible",
   "config.regen_resources.change_ancient_debris_drops": "Change ancient debris drops",
-  "config.regen_resources.bootstrap_vanilla_presets_when_empty": "Auto-create vanilla ore presets when folder is empty",
   "creativetab.regen_resources_tab": "Regen Resources",
   "item.regen_resources.break_stuff": "Destruction Orb",
   "item.regen_resources.ancient_fragment": "Ancient Fragment",

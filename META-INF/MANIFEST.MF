@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Specification-Title: regen_resources
+Specification-Vendor: TeTho_La_Pot
+Specification-Version: 1
+Implementation-Title: RegenResources
+Implementation-Version: 1.2.0
+Implementation-Vendor: TeTho_La_Pot
+Implementation-Timestamp: 2026-05-11T11:40:52+0900
+MixinConfigs: regen_resources.mixins.json
+

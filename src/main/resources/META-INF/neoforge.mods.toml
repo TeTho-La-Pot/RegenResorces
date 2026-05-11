@@ -7,6 +7,9 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
+# FML に Mixin 設定を明示登録（NeoForge MDK 推奨。manifest の MixinConfigs との併用可）
+[[mixins]]
+config="${mod_id}.mixins.json"
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"

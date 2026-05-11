@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "minecraft:block/end_stone"
-  }
+  "parent": "regen_resources:block/e_regen_preset"
 }

@@ -22,5 +22,13 @@ public final class RegenResourcesNetwork {
                 ClientboundJadeRegenProbeInvalidatePacket.TYPE,
                 ClientboundJadeRegenProbeInvalidatePacket.STREAM_CODEC,
                 ClientboundJadeRegenProbeInvalidatePacket::handle);
+        reg.playToClient(
+                ClientboundStrippedPendingPacket.TYPE,
+                ClientboundStrippedPendingPacket.STREAM_CODEC,
+                ClientboundStrippedPendingPacket::handle);
+        reg.playToClient(
+                ClientboundCustomVisualPendingPacket.TYPE,
+                ClientboundCustomVisualPendingPacket.STREAM_CODEC,
+                ClientboundCustomVisualPendingPacket::handle);
     }
 }
