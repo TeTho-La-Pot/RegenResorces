@@ -60,29 +60,36 @@ final class RegenOreHarvest {
     static boolean harvestAndRemove(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         ItemStack tool = player.getMainHandItem();
-        LootParams.Builder lootBuilder = new LootParams.Builder(level)
-                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
-                .withParameter(LootContextParams.TOOL, tool)
-                .withOptionalParameter(LootContextParams.THIS_ENTITY, player)
-                .withOptionalParameter(LootContextParams.BLOCK_ENTITY, blockEntity);
-        List<ItemStack> drops = state.getBlock().getDrops(state, lootBuilder);
+        // ServerPlayerGameMode#destroyBlock と同様、適正ツールでない場合はドロップ・経験値・採掘統計を付与しない。
+        boolean canHarvest = state.canHarvestBlock(level, pos, player);
+        List<ItemStack> drops = List.of();
+        if (canHarvest) {
+            LootParams.Builder lootBuilder = new LootParams.Builder(level)
+                    .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
+                    .withParameter(LootContextParams.TOOL, tool)
+                    .withOptionalParameter(LootContextParams.THIS_ENTITY, player)
+                    .withOptionalParameter(LootContextParams.BLOCK_ENTITY, blockEntity);
+            drops = state.getBlock().getDrops(state, lootBuilder);
+        }
         if (!RegenOreHarvest.destroySilently(level, pos)) {
             return false;
         }
         tool.mineBlock((Level)level, state, pos, (Player)player);
         Vec3 spawn = player.position();
-        for (ItemStack drop : drops) {
-            if (drop.isEmpty()) continue;
-            RegenOreHarvest.spawnItemNearFeet(level, player, spawn, drop.copy());
+        if (canHarvest) {
+            for (ItemStack drop : drops) {
+                if (drop.isEmpty()) continue;
+                RegenOreHarvest.spawnItemNearFeet(level, player, spawn, drop.copy());
+            }
+            int fortuneLevel = RegenOreHarvest.enchantLevel(level, tool, "minecraft:fortune");
+            int silkTouchLevel = RegenOreHarvest.enchantLevel(level, tool, "minecraft:silk_touch");
+            int exp = state.getExpDrop((LevelReader)level, level.random, pos, fortuneLevel, silkTouchLevel);
+            if (exp > 0) {
+                state.getBlock().popExperience(level, BlockPos.containing((Position)spawn), exp);
+            }
+            player.awardStat(Stats.BLOCK_MINED.get(state.getBlock()));
+            player.causeFoodExhaustion(0.005f);
         }
-        int fortuneLevel = RegenOreHarvest.enchantLevel(level, tool, "minecraft:fortune");
-        int silkTouchLevel = RegenOreHarvest.enchantLevel(level, tool, "minecraft:silk_touch");
-        int exp = state.getExpDrop((LevelReader)level, level.random, pos, fortuneLevel, silkTouchLevel);
-        if (exp > 0) {
-            state.getBlock().popExperience(level, BlockPos.containing((Position)spawn), exp);
-        }
-        player.awardStat(Stats.BLOCK_MINED.get(state.getBlock()));
-        player.causeFoodExhaustion(0.005f);
         return true;
     }
 
