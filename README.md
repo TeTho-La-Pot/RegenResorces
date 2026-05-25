@@ -2,7 +2,7 @@
 このソースコードはMinecraft ver.1.20.1のMOD用です。
 
 # Wiki
-
+https://github.com/TeTho-La-Pot/RegenResorces/wiki
 
 # Download
 ## MOD
