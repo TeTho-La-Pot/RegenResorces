@@ -25,6 +25,6 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="tt_core"
 type="required"
-versionRange="[1.1.0,)"
+versionRange="${tt_core_fml_version_range}"
 ordering="NONE"
 side="BOTH"

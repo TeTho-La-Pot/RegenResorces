@@ -10,6 +10,7 @@ import com.github.TeThoLaPot.regen_resources.common.item.BreakStuffItem;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
+import com.github.TeThoLaPot.tt_core.TT_core;
 import com.github.TeThoLaPot.regen_resources.common.tt.RegenSetBlockTtGuard;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.RegenResourcesForgeBootstrap;
@@ -125,6 +126,9 @@ public final class RegenRegenForgeEvents {
 
         BlockState brokenSnapshot = broken;
         RegenRule ruleSnapshot = rule;
+        // harvestAndRemove / 他 MOD の破壊は setBlock(air) 経由で TT を消す。採掘前に rr_src を退避しないと
+        // commit 側で SRC_IMPLICIT になり、再生後に eligible が復元されず 2 回目以降（natural_regen=false 等）が止まる。
+        byte priorSrc = RegenMineMarker.readSourceByte(TT_core.getBlockData(level, posImmutable));
 
         if (alreadyCanceled) {
             // 他 MOD がキャンセルして自前で破壊する場合（OreHarvester 等）:
@@ -132,7 +136,10 @@ public final class RegenRegenForgeEvents {
             // （既に誰かがシェルを置いている／TT が入っている場合は commit 側のガードで弾かれる）
             ServerPlayer breaker = serverPlayer;
             level.getServer()
-                    .execute(() -> commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot, null, breaker));
+                    .execute(
+                            () ->
+                                    commitOreBreakRegen(
+                                            level, posImmutable, brokenSnapshot, ruleSnapshot, priorSrc, breaker));
             return;
         }
 
@@ -142,7 +149,7 @@ public final class RegenRegenForgeEvents {
             return;
         }
 
-        commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot, null, serverPlayer);
+        commitOreBreakRegen(level, posImmutable, brokenSnapshot, ruleSnapshot, priorSrc, serverPlayer);
     }
 
     /**
@@ -175,11 +182,12 @@ public final class RegenRegenForgeEvents {
         }
 
         // 以前のサイクルのキュー・ブロックマップを残すとタスクが複数走り、復元タイミングが不定になる
-        CompoundTag priorPlacement = TT_core.getBlockData(level, pos);
-        byte sourceSnap =
-                forcedPriorSrc != null ? forcedPriorSrc.byteValue() : RegenMineMarker.readSourceByte(priorPlacement);
-
         TT_core.removeBlockData(level, pos);
+
+        byte sourceSnap =
+                forcedPriorSrc != null
+                        ? forcedPriorSrc.byteValue()
+                        : RegenMineMarker.readSourceByte(TT_core.getBlockData(level, pos));
 
         CompoundTag data = new CompoundTag();
         TTDataUtils.putBlockPos(data, "pos", pos);
