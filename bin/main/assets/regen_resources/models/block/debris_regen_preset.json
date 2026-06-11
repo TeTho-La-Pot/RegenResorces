@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/cube_bottom_top",
-  "textures": {
-    "top": "regen_resources:block/debris_regen_preset_top",
-    "bottom": "regen_resources:block/debris_regen_preset_top",
-    "side": "regen_resources:block/debris_regen_preset_side"
-  }
-}
