@@ -1,0 +1,30 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+[[mods]]
+modId="regen_resources"
+version="1.2.2-neoforge-1.21.1"
+displayName="RegenResources"
+authors="TeTho_La_Pot"
+description='''Regeneration Resources Mod.'''
+# FML に Mixin 設定を明示登録（NeoForge MDK 推奨。manifest の MixinConfigs との併用可）
+[[mixins]]
+config="regen_resources.mixins.json"
+[[dependencies.regen_resources]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.228,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.regen_resources]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
+[[dependencies.regen_resources]]
+modId="tt_core"
+type="required"
+versionRange="[1.1.0,)"
+ordering="NONE"
+side="BOTH"

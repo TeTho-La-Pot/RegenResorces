@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "regen_resources:item/ancient_fragment"
+  }
+}
