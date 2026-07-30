@@ -7,7 +7,7 @@ https://github.com/TeTho-La-Pot/RegenResorces/wiki
 # Download
 ## MOD
 ### CurseForge
-[https://legacy.curseforge.com/minecraft/mc-mods/regen_ore](https://www.curseforge.com/minecraft/mc-mods/regen-resources](https://www.curseforge.com/minecraft/mc-mods/regen-resources)
+https://www.curseforge.com/minecraft/mc-mods/regen-resources
 
 
 # Contents description
