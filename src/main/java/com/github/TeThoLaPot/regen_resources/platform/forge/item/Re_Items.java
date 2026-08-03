@@ -15,6 +15,7 @@ package com.github.TeThoLaPot.regen_resources.platform.forge.item;
 
 import com.github.TeThoLaPot.regen_resources.common.item.BreakStuffItem;
 import com.github.TeThoLaPot.regen_resources.common.item.PresetDummyBlockItem;
+import com.github.TeThoLaPot.regen_resources.common.item.SelectStuffItem;
 import com.github.TeThoLaPot.regen_resources.platform.forge.block.Re_Blocks;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -35,6 +36,8 @@ public final class Re_Items {
     public static final RegistryObject<Item> PRESET_DUMMY_STRIPPED_LOG = ITEMS.register("preset_dummy_stripped_log", () -> new PresetDummyBlockItem((Block)Re_Blocks.PRESET_DUMMY_STRIPPED_LOG.get(), new Item.Properties(), "tooltip.regen_resources.preset_dummy_stripped_log"));
     public static final RegistryObject<Item> PRESET_DUMMY_CUSTOM = ITEMS.register("preset_dummy_custom", () -> new PresetDummyBlockItem((Block)Re_Blocks.PRESET_DUMMY_CUSTOM.get(), new Item.Properties(), "tooltip.regen_resources.preset_dummy_custom"));
     public static final RegistryObject<Item> BREAK_STUFF = ITEMS.register("break_stuff", () -> new BreakStuffItem(new Item.Properties().stacksTo(1)));
+    /** 選択のオーブ。クリエイティブ専用で再生設定 UI を開く。 */
+    public static final RegistryObject<Item> SELECT_STUFF = ITEMS.register("select_stuff", () -> new SelectStuffItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ANCIENT_FRAGMENT = ITEMS.register("ancient_fragment", () -> new Item(new Item.Properties()));
 
     private Re_Items() {

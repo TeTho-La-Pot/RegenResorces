@@ -17,11 +17,14 @@ import com.github.TeThoLaPot.regen_resources.platform.forge.RegenForgePlatformCo
 import com.github.TeThoLaPot.regen_resources.platform.forge.RegenForgePlatformNetwork;
 import com.github.TeThoLaPot.regen_resources.platform.forge.block.Re_Blocks;
 import com.github.TeThoLaPot.regen_resources.platform.forge.client.model.RegenCompositeSpriteSourceRegistry;
+import com.github.TeThoLaPot.regen_resources.platform.forge.command.RegenSettingsCommands;
 import com.github.TeThoLaPot.regen_resources.platform.forge.config.RegenPresetIo;
 import com.github.TeThoLaPot.regen_resources.platform.forge.item.Re_Items;
 import com.github.TeThoLaPot.regen_resources.platform.forge.loot.ReLootModifiers;
+import com.github.TeThoLaPot.regen_resources.platform.forge.menu.Re_Menus;
 import com.github.TeThoLaPot.regen_resources.platform.forge.network.RegenResourcesNetwork;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -39,7 +42,9 @@ public final class RegenResourcesForgeBootstrap {
         Re_Items.ITEMS.register(modBus);
         Re_CreativeTabs.CREATIVE_MODE_TABS.register(modBus);
         ReLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modBus);
+        Re_Menus.MENUS.register(modBus);
         modBus.addListener(RegenResourcesForgeBootstrap::onCommonSetup);
+        MinecraftForge.EVENT_BUS.register(RegenSettingsCommands.class);
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientBootstrap.registerEarly();
         }
@@ -47,9 +52,14 @@ public final class RegenResourcesForgeBootstrap {
 
     private static void onCommonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            RegenRuleRegistry.setRules(RegenPresetIo.loadOrCreateDefaults());
+            applyPresetRulesFromDisk();
             RegenResourcesNetwork.register();
         });
+    }
+
+    /** プリセット JSON を読み直してルールを差し替える（ワールド未バインド時は空になる）。 */
+    public static void applyPresetRulesFromDisk() {
+        RegenRuleRegistry.setRules(RegenPresetIo.loadOrCreateDefaults());
     }
 
     private static final class ClientBootstrap {

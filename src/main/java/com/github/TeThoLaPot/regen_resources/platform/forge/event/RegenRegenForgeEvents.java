@@ -47,6 +47,7 @@ import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import com.github.TeThoLaPot.regen_resources.common.tt.RegenSetBlockTtGuard;
+import com.github.TeThoLaPot.regen_resources.platform.forge.RegenResourcesForgeBootstrap;
 import com.github.TeThoLaPot.regen_resources.platform.forge.block.Re_Blocks;
 import com.github.TeThoLaPot.regen_resources.platform.forge.config.RegenPresetIo;
 import com.github.TeThoLaPot.regen_resources.platform.forge.event.FtbUltimineChainProbe;
@@ -61,6 +62,7 @@ import com.github.TeThoLaPot.tt_core.TT_core;
 import com.github.TeThoLaPot.tt_core.api.ITTTaskExecutor;
 import com.github.TeThoLaPot.tt_core.api.TTDataUtils;
 import com.github.TeThoLaPot.tt_core.data.TTDataBank;
+import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -84,6 +86,7 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
@@ -130,8 +133,15 @@ public final class RegenRegenForgeEvents {
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
-        RegenRuleRegistry.setRules(RegenPresetIo.loadOrCreateDefaults());
+        RegenPresetIo.bindWorld(event.getServer());
+        RegenResourcesForgeBootstrap.applyPresetRulesFromDisk();
         TTDataBank.registerExecutor((String)EXECUTOR_ID, (ITTTaskExecutor)REGEN_PROCESS_EXECUTOR);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        RegenPresetIo.unbindWorld();
+        RegenRuleRegistry.setRules(List.of());
     }
 
     @SubscribeEvent(priority=EventPriority.LOWEST, receiveCanceled=true)

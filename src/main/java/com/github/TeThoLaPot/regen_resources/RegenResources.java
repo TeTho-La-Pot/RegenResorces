@@ -38,7 +38,7 @@ public final class RegenResources {
     public RegenResources() {
         RegenResources.migrateLegacyCommonConfigIfPresent();
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, (IConfigSpec)RegenResourcesForgeConfig.SPEC, COMMON_CONFIG_RELATIVE_PATH);
-        LOGGER.info("{} loaded (skeleton).", (Object)MOD_ID);
+        LOGGER.info("{} loaded (Forge). Common config: {} | RegenPresets: <world>/serverconfig/RegenResources/RegenPresets/", (Object)MOD_ID, (Object)FMLPaths.CONFIGDIR.get().toAbsolutePath());
         RegenResourcesForgeBootstrap.bootstrap();
     }
 

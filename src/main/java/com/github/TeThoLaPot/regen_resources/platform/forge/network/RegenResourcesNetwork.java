@@ -32,6 +32,8 @@ public final class RegenResourcesNetwork {
         CHANNEL.registerMessage(packetId++, ClientboundJadeRegenProbeInvalidatePacket.class, ClientboundJadeRegenProbeInvalidatePacket::encode, ClientboundJadeRegenProbeInvalidatePacket::decode, ClientboundJadeRegenProbeInvalidatePacket::handle);
         CHANNEL.registerMessage(packetId++, ClientboundStrippedPendingPacket.class, ClientboundStrippedPendingPacket::encode, ClientboundStrippedPendingPacket::decode, ClientboundStrippedPendingPacket::handle);
         CHANNEL.registerMessage(packetId++, ClientboundCustomVisualPendingPacket.class, ClientboundCustomVisualPendingPacket::encode, ClientboundCustomVisualPendingPacket::decode, ClientboundCustomVisualPendingPacket::handle);
+        CHANNEL.registerMessage(packetId++, ClientboundOpenRegenSettingsPacket.class, ClientboundOpenRegenSettingsPacket::encode, ClientboundOpenRegenSettingsPacket::decode, ClientboundOpenRegenSettingsPacket::handle);
+        CHANNEL.registerMessage(packetId++, ServerboundSaveRegenSettingsPacket.class, ServerboundSaveRegenSettingsPacket::encode, ServerboundSaveRegenSettingsPacket::decode, ServerboundSaveRegenSettingsPacket::handle);
     }
 
     static {

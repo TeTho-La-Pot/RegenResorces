@@ -90,6 +90,10 @@ repositories {
             includeGroup 'curse.maven'
         }
     }
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
     mavenCentral()
 }
 
@@ -139,6 +143,11 @@ dependencies {
     // Jade 公式（Forge）: implementation fg.deobf("curse.maven:jade-324717:${jade_id}")
     // ※最終 jar に同梱されない（ソースセットのみパッケージング）。runClient は上記 mixin プロパティ必須。
     implementation fg.deobf("curse.maven:jade-324717:${jade_file_id}")
+
+    // JEI: API のみコンパイル。実行時は任意（プレイヤーが JEI を入れたときだけ有効）
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
 }
 
 tasks.named('processResources', ProcessResources).configure {
