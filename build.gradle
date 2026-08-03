@@ -62,6 +62,10 @@ repositories {
             includeGroup 'curse.maven'
         }
     }
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
     mavenCentral()
 }
 
@@ -74,6 +78,9 @@ dependencies {
         implementation "com.github.TeThoLaPot:tt_core:${tt_core_version}"
     }
     implementation "curse.maven:jade-324717:${jade_file_id}"
+    // JEI: API のみコンパイル。実行時は任意（プレイヤーが JEI を入れたときだけ有効）
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
     // Mixin は実行時に FML が読み込む。AP は NeoGradle の開発マッピングと相性が悪く参照解決に失敗するため付けない。
 }
 

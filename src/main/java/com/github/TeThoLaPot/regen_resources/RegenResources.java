@@ -1,7 +1,6 @@
 package com.github.TeThoLaPot.regen_resources;
 
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.RegenResourcesForgeBootstrap;
-import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenPresetIo;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
@@ -21,10 +20,9 @@ public final class RegenResources {
     public RegenResources(IEventBus modEventBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.COMMON, RegenResourcesForgeConfig.SPEC);
         LOGGER.info(
-                "{} loaded (NeoForge). Config dir: {} | RegenPresets: {}",
+                "{} loaded (NeoForge). Common config: {} | RegenPresets: <world>/serverconfig/RegenResources/RegenPresets/",
                 MOD_ID,
-                FMLPaths.CONFIGDIR.get().toAbsolutePath(),
-                RegenPresetIo.rulesDir().toAbsolutePath());
+                FMLPaths.CONFIGDIR.get().toAbsolutePath());
         RegenResourcesForgeBootstrap.bootstrap(modEventBus);
     }
 }

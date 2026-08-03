@@ -32,6 +32,7 @@ public final class Re_CreativeTabs {
                                 output.accept(Re_Items.PRESET_DUMMY_STRIPPED_LOG.get());
                                 output.accept(Re_Items.PRESET_DUMMY_CUSTOM.get());
                                 output.accept(Re_Items.BREAK_STUFF.get());
+                                output.accept(Re_Items.SELECT_STUFF.get());
                                 output.accept(Re_Items.ANCIENT_FRAGMENT.get());
                             })
                             .build()

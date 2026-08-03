@@ -30,5 +30,13 @@ public final class RegenResourcesNetwork {
                 ClientboundCustomVisualPendingPacket.TYPE,
                 ClientboundCustomVisualPendingPacket.STREAM_CODEC,
                 ClientboundCustomVisualPendingPacket::handle);
+        reg.playToClient(
+                ClientboundOpenRegenSettingsPacket.TYPE,
+                ClientboundOpenRegenSettingsPacket.STREAM_CODEC,
+                ClientboundOpenRegenSettingsPacket::handle);
+        reg.playToServer(
+                ServerboundSaveRegenSettingsPacket.TYPE,
+                ServerboundSaveRegenSettingsPacket.STREAM_CODEC,
+                ServerboundSaveRegenSettingsPacket::handle);
     }
 }

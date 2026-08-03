@@ -1,37 +1,5 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  net.minecraft.core.BlockPos
- *  net.minecraft.core.registries.BuiltInRegistries
- *  net.minecraft.resources.ResourceLocation
- *  net.minecraft.world.InteractionHand
- *  net.minecraft.world.InteractionResult
- *  net.minecraft.world.entity.Entity
- *  net.minecraft.world.entity.player.Player
- *  net.minecraft.world.item.Item
- *  net.minecraft.world.item.ItemStack
- *  net.minecraft.world.level.BlockGetter
- *  net.minecraft.world.level.Explosion
- *  net.minecraft.world.level.Level
- *  net.minecraft.world.level.LevelReader
- *  net.minecraft.world.level.block.Block
- *  net.minecraft.world.level.block.EntityBlock
- *  net.minecraft.world.level.block.SoundType
- *  net.minecraft.world.level.block.entity.BlockEntity
- *  net.minecraft.world.level.block.entity.BlockEntityTicker
- *  net.minecraft.world.level.block.entity.BlockEntityType
- *  net.minecraft.world.level.block.state.BlockBehaviour$Properties
- *  net.minecraft.world.level.block.state.BlockState
- *  net.minecraft.world.phys.BlockHitResult
- *  org.jetbrains.annotations.Nullable
- */
 package com.github.TeThoLaPot.regen_resources.common.block;
 
-import com.github.TeThoLaPot.regen_resources.common.block.RegenBlockEntity;
-import com.github.TeThoLaPot.regen_resources.common.block.RegenCorruptionFallback;
-import com.github.TeThoLaPot.regen_resources.common.block.RegenCustomVisualSpec;
-import com.github.TeThoLaPot.regen_resources.common.block.RegenVisual;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import java.util.List;
@@ -61,12 +29,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
-public final class CustomPresetDummyBlock
-extends Block
-implements EntityBlock {
+public final class CustomPresetDummyBlock extends Block implements EntityBlock {
     private final Supplier<BlockEntityType<RegenBlockEntity>> blockEntityType;
 
-    public CustomPresetDummyBlock(Supplier<BlockEntityType<RegenBlockEntity>> blockEntityType, BlockBehaviour.Properties properties) {
+    public CustomPresetDummyBlock(
+            Supplier<BlockEntityType<RegenBlockEntity>> blockEntityType, BlockBehaviour.Properties properties) {
         super(properties);
         this.blockEntityType = blockEntityType;
     }
@@ -81,7 +48,7 @@ implements EntityBlock {
     }
 
     public SoundType getSoundType(BlockState state, LevelReader level, BlockPos pos, @Nullable Entity entity) {
-        BlockState sample = this.miningSample((BlockGetter)level, pos);
+        BlockState sample = this.miningSample(level, pos);
         return sample.getBlock().getSoundType(sample, level, pos, entity);
     }
 
@@ -111,7 +78,7 @@ implements EntityBlock {
         if (stack.isEmpty()) {
             return null;
         }
-        Block heldBlock = Block.byItem((Item)stack.getItem());
+        Block heldBlock = Block.byItem(stack.getItem());
         if (heldBlock.defaultBlockState().isAir()) {
             return null;
         }
@@ -130,47 +97,53 @@ implements EntityBlock {
         if (hand != InteractionHand.MAIN_HAND) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        BlockState heldState = CustomPresetDummyBlock.heldBlockState(player);
+        BlockState heldState = heldBlockState(player);
         if (heldState == null) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
-        ResourceLocation dim = level.dimension().location();
-        List<RegenRule> matches = RegenRuleRegistry.allCustomPresetMatches(dim, heldState);
+
+        List<RegenRule> matches = RegenRuleRegistry.allCustomPresetMatchesIgnoringDimension(heldState);
         if (matches.isEmpty()) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-        BlockEntity be = level.getBlockEntity(pos);
-        if (!(be instanceof RegenBlockEntity)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-        RegenBlockEntity rbe = (RegenBlockEntity) be;
-        ResourceLocation heldKey = BuiltInRegistries.BLOCK.getKey(heldState.getBlock());
-        if (matches.size() == 1) {
-            RegenCustomVisualSpec spec = matches.get(0).customVisualSpec();
-            if (spec == null) {
-                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            }
-            if (Objects.equals(spec, rbe.getCustomVisualSpec())) {
-                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            }
-            if (level.isClientSide()) {
+            // クライアントにルールが無いときはサーバ判定に任せる（設置はサーバが止める）
+            if (level.isClientSide() && RegenRuleRegistry.rules().isEmpty()) {
                 return ItemInteractionResult.SUCCESS;
             }
-            rbe.resetCustomPresetDummyCycle();
-            rbe.setCustomVisualSpec(spec);
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        if (level.isClientSide()) {
+            // マッチ時は設置をキャンセル
+            return ItemInteractionResult.SUCCESS;
+        }
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof RegenBlockEntity rbe)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        ResourceLocation heldKey = BuiltInRegistries.BLOCK.getKey(heldState.getBlock());
+        RegenCustomVisualSpec nextSpec;
+        if (matches.size() == 1) {
+            nextSpec = matches.get(0).customVisualSpec();
+            if (nextSpec == null) {
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            }
+            if (!Objects.equals(nextSpec, rbe.getCustomVisualSpec())) {
+                rbe.resetCustomPresetDummyCycle();
+                rbe.setCustomVisualSpec(nextSpec);
+            }
+            // 既に同じ見た目でも CONSUME（設置キャンセル）
             return ItemInteractionResult.CONSUME;
         }
+
         if (!Objects.equals(heldKey, rbe.customPresetDummyCycleTarget())) {
             rbe.setCustomPresetDummyCycleTarget(heldKey);
             rbe.setCustomPresetDummyCycleIndex(-1);
         }
         int nextIdx = (rbe.customPresetDummyCycleIndex() + 1) % matches.size();
-        RegenCustomVisualSpec nextSpec = matches.get(nextIdx).customVisualSpec();
+        nextSpec = matches.get(nextIdx).customVisualSpec();
         if (nextSpec == null) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-        if (level.isClientSide()) {
-            return ItemInteractionResult.SUCCESS;
         }
         rbe.setCustomPresetDummyCycleIndex(nextIdx);
         rbe.setCustomPresetDummyCycleTarget(heldKey);
@@ -178,4 +151,3 @@ implements EntityBlock {
         return ItemInteractionResult.CONSUME;
     }
 }
-

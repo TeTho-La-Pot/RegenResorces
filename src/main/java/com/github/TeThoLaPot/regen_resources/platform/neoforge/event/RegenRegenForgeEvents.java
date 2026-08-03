@@ -10,8 +10,10 @@ import com.github.TeThoLaPot.regen_resources.common.item.BreakStuffItem;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenMineMarker;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
+import com.github.TeThoLaPot.regen_resources.common.regen.RegenTargetSpec;
 import com.github.TeThoLaPot.tt_core.TT_core;
 import com.github.TeThoLaPot.regen_resources.common.tt.RegenSetBlockTtGuard;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenPresetIo;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenResourcesForgeConfig;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.RegenResourcesForgeBootstrap;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.block.Re_Blocks;
@@ -38,10 +40,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
@@ -67,8 +71,15 @@ public final class RegenRegenForgeEvents {
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
+        RegenPresetIo.bindWorld(event.getServer());
         RegenResourcesForgeBootstrap.applyPresetRulesFromDisk();
         TTDataBank.registerExecutor(EXECUTOR_ID, REGEN_PROCESS_EXECUTOR);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        RegenPresetIo.unbindWorld();
+        RegenRuleRegistry.setRules(List.of());
     }
 
     // OreHarvester など「BreakEvent を見て連鎖破壊を始動する」系 MOD と共存するため、
@@ -189,9 +200,15 @@ public final class RegenRegenForgeEvents {
                         ? forcedPriorSrc.byteValue()
                         : RegenMineMarker.readSourceByte(TT_core.getBlockData(level, pos));
 
+        BlockState stateToRestore = brokenState;
+        RegenTargetSpec matchedTarget = RegenRuleRegistry.findMatchingTarget(brokenState, rule);
+        if (matchedTarget != null) {
+            stateToRestore = matchedTarget.applyRestore(brokenState);
+        }
+
         CompoundTag data = new CompoundTag();
         TTDataUtils.putBlockPos(data, "pos", pos);
-        TTDataUtils.putBlockState(data, "state", brokenState);
+        TTDataUtils.putBlockState(data, "state", stateToRestore);
         data.putString("visual", rule.visual().getSerializedName());
         data.putUUID(TAG_REGEN_TICKET, UUID.randomUUID());
         data.putLong(TAG_EXECUTE_AT, level.getGameTime() + rule.delayTicks());

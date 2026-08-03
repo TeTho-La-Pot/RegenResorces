@@ -5,6 +5,7 @@ import com.github.TeThoLaPot.regen_resources.common.block.RegenTemplate;
 import com.github.TeThoLaPot.regen_resources.common.block.RegenVisual;
 import com.github.TeThoLaPot.regen_resources.common.regen.DimensionRestriction;
 import com.github.TeThoLaPot.regen_resources.common.regen.RegenRule;
+import com.github.TeThoLaPot.regen_resources.common.regen.RegenTargetSpec;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -14,8 +15,8 @@ import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.loading.FMLPaths;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -33,24 +34,26 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static net.minecraft.core.registries.Registries.BLOCK;
-
 /**
- * {@code config/RegenResources/RegenPresets/*.json}<br>
+ * ワールドの {@code serverconfig/RegenResources/RegenPresets/*.json}。<br>
  * 1.20.1 Forge 版と同じ alpha / フラット形式（{@code natural_regen}、カスタム {@code template}/{@code textures} 含む）。
  */
 public final class RegenPresetIo {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** NeoForge のワールド別 SERVER config と同じ階層名。 */
+    private static final LevelResource SERVERCONFIG = new LevelResource("serverconfig");
+
     private static final String README_FILE = "README_RegenPresets.txt";
     private static final String README_TEXT =
             """
-                    RegenResources — RegenPresets folder
+                    RegenResources — RegenPresets (per-world)
+                    - Path: <world>/serverconfig/RegenResources/RegenPresets/
                     - Put preset .json files here (see mod documentation for alpha vs flat format).
                     - Common config: regen_resources-common.toml → bootstrapVanillaPresetsWhenEmpty
                     - When that option is true, built-in filenames that are still missing (e.g. stone_preset.json) are created once; existing files are never overwritten.
-                    このフォルダに .json を配置します。
+                    ワールドごとのフォルダです。<world>/serverconfig/RegenResources/RegenPresets/ に .json を置きます。
                     bootstrapVanillaPresetsWhenEmpty が true のとき、不足している既定ファイル名だけサンプルが自動生成されます（上書きしません）。
                     """;
 
@@ -59,6 +62,9 @@ public final class RegenPresetIo {
 
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     private static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+
+    /** 現在のワールドのプリセットディレクトリ。ワールド未ロード時は null。 */
+    private static volatile @Nullable Path activeWorldRulesDir;
 
     private RegenPresetIo() {}
 
@@ -74,18 +80,198 @@ public final class RegenPresetIo {
         }
     }
 
-    /** {@code FMLPaths.CONFIGDIR}/RegenResources/RegenPresets */
-    public static Path rulesDir() {
+    /** 旧グローバル配置（マイグレーション元）。 */
+    public static Path legacyGlobalRulesDir() {
         return FMLPaths.CONFIGDIR.get().resolve("RegenResources").resolve("RegenPresets");
+    }
+
+    /** {@code <world>/serverconfig/RegenResources/RegenPresets}。ワールド未バインド時は null。 */
+    public static @Nullable Path rulesDir() {
+        return activeWorldRulesDir;
+    }
+
+    public static Path rulesDirFor(MinecraftServer server) {
+        return server.getWorldPath(SERVERCONFIG).resolve("RegenResources").resolve("RegenPresets");
+    }
+
+    public static void bindWorld(MinecraftServer server) {
+        Path dir = rulesDirFor(server);
+        activeWorldRulesDir = dir;
+        try {
+            Files.createDirectories(dir);
+            Path readme = dir.resolve(README_FILE);
+            boolean firstSetup = !Files.exists(readme, LinkOption.NOFOLLOW_LINKS);
+            writePresetDirectoryReadmeIfAbsent(dir);
+            // 初回のみ旧グローバルから移行。空フォルダへの再入場で毎回コピーし直さない。
+            if (firstSetup) {
+                migrateFromLegacyGlobalIfNeeded(dir);
+            }
+        } catch (IOException ex) {
+            LOGGER.warn("RegenResources: could not prepare world RegenPresets {}: {}", dir, ex.toString());
+        }
+        LOGGER.info("RegenResources: RegenPresets bound to {}", dir.toAbsolutePath());
+    }
+
+    public static void unbindWorld() {
+        activeWorldRulesDir = null;
+    }
+
+    /** ワールド未バインド時は空。ファイル名は {@code *.json} のファイル名のみ。 */
+    public static List<String> listPresetFileNames() {
+        Path dir = activeWorldRulesDir;
+        if (dir == null) {
+            return List.of();
+        }
+        try {
+            return listJsonFilesSorted(dir).stream().map(p -> p.getFileName().toString()).toList();
+        } catch (IOException ex) {
+            LOGGER.warn("RegenResources: list presets failed: {}", ex.toString());
+            return List.of();
+        }
+    }
+
+    public static @Nullable String readPresetJson(String fileName) {
+        Path path = resolvePresetFile(fileName);
+        if (path == null) {
+            return null;
+        }
+        try {
+            return Files.readString(path, StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            LOGGER.warn("RegenResources: read preset '{}' failed: {}", fileName, ex.toString());
+            return null;
+        }
+    }
+
+    /**
+     * @return null なら成功、非 null はエラーメッセージキーまたは説明
+     */
+    public static @Nullable String writePresetJson(String fileName, String json) {
+        Path path = resolvePresetFile(fileName);
+        if (path == null) {
+            return "invalid_name";
+        }
+        try {
+            JsonParser.parseString(json);
+        } catch (RuntimeException ex) {
+            return "invalid_json";
+        }
+        try {
+            writeUtf8(path, json);
+            return null;
+        } catch (IOException ex) {
+            LOGGER.warn("RegenResources: write preset '{}' failed: {}", fileName, ex.toString());
+            return "io_error";
+        }
+    }
+
+    public static @Nullable String deletePresetJson(String fileName) {
+        Path path = resolvePresetFile(fileName);
+        if (path == null) {
+            return "invalid_name";
+        }
+        try {
+            Files.deleteIfExists(path);
+            return null;
+        } catch (IOException ex) {
+            LOGGER.warn("RegenResources: delete preset '{}' failed: {}", fileName, ex.toString());
+            return "io_error";
+        }
+    }
+
+    public static String defaultEmptyPresetJson(String presetToken) {
+        String token = presetToken == null || presetToken.isBlank() ? "stone_preset" : presetToken.trim();
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("preset", token);
+        root.put("global_tick", 1200);
+        root.put("entries", List.of());
+        return GSON_PRETTY.toJson(root);
+    }
+
+    public static boolean isValidPresetFileName(String fileName) {
+        if (fileName == null) {
+            return false;
+        }
+        String n = fileName.trim();
+        if (!n.toLowerCase(Locale.ROOT).endsWith(".json")) {
+            return false;
+        }
+        String base = n.substring(0, n.length() - 5);
+        if (base.isEmpty() || base.length() > 64) {
+            return false;
+        }
+        for (int i = 0; i < base.length(); i++) {
+            char c = base.charAt(i);
+            if (!(c >= 'a' && c <= 'z')
+                    && !(c >= '0' && c <= '9')
+                    && c != '_'
+                    && c != '-') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static @Nullable Path resolvePresetFile(String fileName) {
+        Path dir = activeWorldRulesDir;
+        if (dir == null || !isValidPresetFileName(fileName)) {
+            return null;
+        }
+        Path resolved = dir.resolve(fileName.trim()).normalize();
+        if (!resolved.startsWith(dir.normalize())) {
+            return null;
+        }
+        return resolved;
+    }
+
+    /**
+     * ワールド側に JSON が無く、旧 {@code config/RegenResources/RegenPresets} にだけある場合は一度コピーする。
+     */
+    private static void migrateFromLegacyGlobalIfNeeded(Path worldDir) throws IOException {
+        List<Path> worldJson = listJsonFilesSorted(worldDir);
+        if (!worldJson.isEmpty()) {
+            return;
+        }
+        Path legacy = legacyGlobalRulesDir();
+        if (!Files.isDirectory(legacy)) {
+            return;
+        }
+        List<Path> legacyJson = listJsonFilesSorted(legacy);
+        if (legacyJson.isEmpty()) {
+            return;
+        }
+        int n = 0;
+        for (Path src : legacyJson) {
+            Path dest = worldDir.resolve(src.getFileName().toString());
+            if (Files.exists(dest, LinkOption.NOFOLLOW_LINKS)) {
+                continue;
+            }
+            Files.copy(src, dest);
+            n++;
+        }
+        if (n > 0) {
+            LOGGER.info(
+                    "RegenResources: migrated {} preset file(s) from {} to world {}",
+                    n,
+                    legacy.toAbsolutePath(),
+                    worldDir.toAbsolutePath());
+        }
     }
 
     /**
      * すべてのプリセットを読み、alpha / フラット混在可。
-     * <p>バニラ既定 JSON は {@link RegenResourcesForgeConfig#BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY} が true のとき、
-     * 組み込みファイル名でまだ無いものだけ生成する。
+     * <p>ワールド未バインド時は空リスト（グローバル {@code config/} へは書き込まない）。
+     * <p>読み込み順: {@code <world>/serverconfig/.../RegenPresets/} を優先し、
+     * 同名ファイルが無いものだけ旧 {@code config/RegenResources/RegenPresets/} からも読む
+     * （ダミー／再生の両方で両ロケーションを使う）。
+     * <p>{@link RegenResourcesForgeConfig#BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY} が true のとき、
+     * <strong>バインド中ワールド</strong>の serverconfig にだけ不足している既定 JSON を生成する。
      */
     public static List<RegenRule> loadOrCreateDefaults() {
-        Path dir = rulesDir();
+        Path dir = activeWorldRulesDir;
+        if (dir == null) {
+            return List.of();
+        }
         try {
             Files.createDirectories(dir);
             writePresetDirectoryReadmeIfAbsent(dir);
@@ -95,33 +281,54 @@ public final class RegenPresetIo {
         }
 
         List<RegenRule> rules = new ArrayList<>();
+        java.util.LinkedHashSet<String> loadedNames = new java.util.LinkedHashSet<>();
+        appendRulesFromDir(dir, rules, loadedNames, true);
+        Path legacy = legacyGlobalRulesDir();
+        if (Files.isDirectory(legacy)) {
+            appendRulesFromDir(legacy, rules, loadedNames, false);
+        }
+        if (rules.isEmpty()) {
+            LOGGER.info(
+                    "RegenResources: no regeneration rules loaded from {} (or legacy {}) — add .json presets or enable bootstrapVanillaPresetsWhenEmpty in common config.",
+                    dir.toAbsolutePath(),
+                    legacy.toAbsolutePath());
+        }
+        return rules;
+    }
+
+    /**
+     * @param claimNames true なら読んだファイル名を {@code loadedNames} に登録（ワールド側）
+     * @param onlyIfNameFree false のとき、既に読んだ同名はスキップ（レガシー側）
+     */
+    private static void appendRulesFromDir(
+            Path dir, List<RegenRule> rules, java.util.Set<String> loadedNames, boolean claimNames) {
         try {
-            List<Path> files = listJsonFilesSorted(dir);
-            for (Path p : files) {
+            for (Path p : listJsonFilesSorted(dir)) {
+                String name = p.getFileName().toString();
+                if (!claimNames && loadedNames.contains(name)) {
+                    continue;
+                }
                 try {
                     String json = Files.readString(p, StandardCharsets.UTF_8);
                     JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
                     if (looksLikeAlphaPreset(obj)) {
-                        rules.addAll(parseAlphaFile(p.getFileName().toString(), json));
+                        rules.addAll(parseAlphaFile(name, json));
                     } else {
                         RegenRule flat = parseFlatRule(obj);
                         if (flat != null) {
                             rules.add(flat);
                         }
                     }
+                    if (claimNames) {
+                        loadedNames.add(name);
+                    }
                 } catch (RuntimeException | IOException ex) {
-                    LOGGER.warn("RegenResources: skip broken preset '{}': {}", p.getFileName(), ex.toString());
+                    LOGGER.warn("RegenResources: skip broken preset '{}': {}", name, ex.toString());
                 }
             }
         } catch (IOException ex) {
-            LOGGER.warn("RegenResources: could not list RegenPresets: {}", ex.toString());
+            LOGGER.warn("RegenResources: could not list RegenPresets {}: {}", dir, ex.toString());
         }
-        if (rules.isEmpty()) {
-            LOGGER.info(
-                    "RegenResources: no regeneration rules loaded from {} (add .json presets or enable bootstrapVanillaPresetsWhenEmpty in common config).",
-                    dir.toAbsolutePath());
-        }
-        return rules;
     }
 
     private static boolean looksLikeAlphaPreset(JsonObject obj) {
@@ -153,21 +360,20 @@ public final class RegenPresetIo {
         if (root.entries == null || root.entries.isEmpty()) {
             return out;
         }
-        long rootDefaultDelay = resolveDelayTicksAlias(root.delayTicks, root.tick, "root of '" + fileNameLabel + "'");
+        long rootDefaultDelay = resolveRootDelayTicks(root, "root of '" + fileNameLabel + "'");
         for (PresetEntryJson e : root.entries) {
             long delay = alphaEntryDelayTicks(e, rootDefaultDelay, "entry in '" + fileNameLabel + "'");
             if (delay < 1L) {
                 LOGGER.warn(
-                        "RegenResources: skip entry with invalid delay (no effective tick/delay_ticks entry or root) in {}",
+                        "RegenResources: skip entry with invalid delay (no effective entry_tick/tick/delay_ticks or global_tick) in {}",
                         fileNameLabel);
                 continue;
             }
             DimensionRestriction dr = DimensionRestriction.fromJson(e.dimensions, e.dimensionExclusion);
-            List<ResourceLocation> ids = new ArrayList<>();
-            List<TagKey<Block>> tags = new ArrayList<>();
-            addBlockSpecs(e.targets, ids, tags);
-            addBlockSpecs(e.blocks, ids, tags);
-            if (ids.isEmpty() && tags.isEmpty()) {
+            List<RegenTargetSpec> targets = new ArrayList<>();
+            addTargetSpecs(e.targets, targets);
+            addTargetSpecs(e.blocks, targets);
+            if (targets.isEmpty()) {
                 continue;
             }
             RegenCustomVisualSpec custom = null;
@@ -178,13 +384,13 @@ public final class RegenPresetIo {
                     continue;
                 }
             }
-            out.add(new RegenRule(delay, visual, dr, List.copyOf(ids), List.copyOf(tags), e.naturalRegen, custom));
+            out.add(new RegenRule(delay, visual, dr, List.copyOf(targets), e.naturalRegen, custom));
         }
         return out;
     }
 
     private static long alphaEntryDelayTicks(PresetEntryJson e, long rootDefaultDelayOrZero, String contextForLog) {
-        long inner = resolveDelayTicksAlias(e.delayTicks, e.tick, contextForLog);
+        long inner = resolveEntryDelayTicks(e, contextForLog);
         if (inner > 0L) {
             return inner;
         }
@@ -194,20 +400,56 @@ public final class RegenPresetIo {
         return 0L;
     }
 
+    /** global_tick → default_tick → tick → delay_ticks */
+    private static long resolveRootDelayTicks(PresetFileRoot root, String contextForLog) {
+        return firstPositiveDelay(
+                contextForLog,
+                new String[] {"global_tick", "default_tick", "tick", "delay_ticks"},
+                root.globalTick,
+                root.defaultTick,
+                root.tick,
+                root.delayTicks);
+    }
+
+    /** entry_tick → tick → delay_ticks */
+    private static long resolveEntryDelayTicks(PresetEntryJson e, String contextForLog) {
+        return firstPositiveDelay(
+                contextForLog,
+                new String[] {"entry_tick", "tick", "delay_ticks"},
+                e.entryTick,
+                e.tick,
+                e.delayTicks);
+    }
+
+    private static long firstPositiveDelay(String contextForLog, String[] names, Long... fields) {
+        Long chosen = null;
+        String chosenName = null;
+        for (int i = 0; i < fields.length; i++) {
+            Long v = fields[i] != null && fields[i] > 0L ? fields[i] : null;
+            if (v == null) {
+                continue;
+            }
+            String name = i < names.length ? names[i] : ("field" + i);
+            if (chosen == null) {
+                chosen = v;
+                chosenName = name;
+            } else if (!chosen.equals(v)) {
+                LOGGER.warn(
+                        "RegenResources: {}: fields '{}' ({}) and '{}' ({}) differ; using '{}'",
+                        contextForLog,
+                        chosenName,
+                        chosen,
+                        name,
+                        v,
+                        chosenName);
+            }
+        }
+        return chosen != null ? chosen : 0L;
+    }
+
     private static long resolveDelayTicksAlias(@Nullable Long delayTicksField, @Nullable Long tickField, String contextForLog) {
-        Long d = delayTicksField != null && delayTicksField > 0L ? delayTicksField : null;
-        Long t = tickField != null && tickField > 0L ? tickField : null;
-        if (d != null && t != null && !d.equals(t)) {
-            LOGGER.warn("RegenResources: {}: fields 'delay_ticks' ({}) and 'tick' ({}) differ; using 'tick'", contextForLog, d, t);
-            return t;
-        }
-        if (t != null) {
-            return t;
-        }
-        if (d != null) {
-            return d;
-        }
-        return 0L;
+        return firstPositiveDelay(
+                contextForLog, new String[] {"tick", "delay_ticks"}, tickField, delayTicksField);
     }
 
     private static @Nullable Long readOptionalPositiveDelayFromJson(JsonObject obj, String key) {
@@ -235,7 +477,7 @@ public final class RegenPresetIo {
     }
 
     private static void ensureVanillaDefaultPresets(Path presetsDir) throws IOException {
-        if (!RegenResourcesForgeConfig.BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY.get()) {
+        if (!RegenResourcesForgeConfig.BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY.getAsBoolean()) {
             return;
         }
         Files.createDirectories(presetsDir);
@@ -265,18 +507,21 @@ public final class RegenPresetIo {
     }
 
     private static RegenRule parseFlatRule(JsonObject obj) {
-        Long delayTicksRoot = readOptionalPositiveDelayFromJson(obj, "delay_ticks");
-        Long tickRoot = readOptionalPositiveDelayFromJson(obj, "tick");
-        long delay = resolveDelayTicksAlias(delayTicksRoot, tickRoot, "(flat rule)");
+        long delay = firstPositiveDelay(
+                "(flat rule)",
+                new String[] {"global_tick", "entry_tick", "default_tick", "tick", "delay_ticks"},
+                readOptionalPositiveDelayFromJson(obj, "global_tick"),
+                readOptionalPositiveDelayFromJson(obj, "entry_tick"),
+                readOptionalPositiveDelayFromJson(obj, "default_tick"),
+                readOptionalPositiveDelayFromJson(obj, "tick"),
+                readOptionalPositiveDelayFromJson(obj, "delay_ticks"));
         if (delay < 1L) {
             delay = 1200L;
         }
         RegenVisual visual = parseFlatVisualToken(obj);
         DimensionRestriction dr = dimensionFromFlat(obj);
-        List<ResourceLocation> ids = new ArrayList<>();
-        List<TagKey<Block>> tags = new ArrayList<>();
-        addBlockSpecs(targetsFromFlatJson(obj), ids, tags);
-        if (ids.isEmpty() && tags.isEmpty()) {
+        List<RegenTargetSpec> targets = parseTargetsFromJsonArray(obj.get("targets"));
+        if (targets.isEmpty()) {
             return null;
         }
         Boolean naturalRegen = obj.has("natural_regen") ? obj.get("natural_regen").getAsBoolean() : null;
@@ -300,7 +545,7 @@ public final class RegenPresetIo {
                 return null;
             }
         }
-        return new RegenRule(delay, visual, dr, List.copyOf(ids), List.copyOf(tags), naturalRegen, custom);
+        return new RegenRule(delay, visual, dr, List.copyOf(targets), naturalRegen, custom);
     }
 
     private static RegenVisual parseFlatVisualToken(JsonObject obj) {
@@ -330,6 +575,50 @@ public final class RegenPresetIo {
         List<String> out = new ArrayList<>();
         appendJsonStringArray(obj, "targets", out);
         return out.isEmpty() ? null : out;
+    }
+
+    private static List<RegenTargetSpec> parseTargetsFromJsonArray(@Nullable JsonElement el) {
+        List<RegenTargetSpec> out = new ArrayList<>();
+        if (el == null || !el.isJsonArray()) {
+            return out;
+        }
+        for (JsonElement item : el.getAsJsonArray()) {
+            RegenTargetSpec spec = RegenTargetSpec.parse(item);
+            if (spec != null) {
+                out.add(spec);
+            }
+        }
+        return out;
+    }
+
+    /** Gson が文字列配列として読んだ場合と、手動 JsonArray の両方に対応。 */
+    private static void addTargetSpecs(@Nullable List<?> raw, List<RegenTargetSpec> out) {
+        if (raw == null) {
+            return;
+        }
+        for (Object o : raw) {
+            if (o == null) {
+                continue;
+            }
+            if (o instanceof String s) {
+                RegenTargetSpec spec = RegenTargetSpec.parseStringToken(s);
+                if (spec != null) {
+                    out.add(spec);
+                }
+            } else if (o instanceof JsonElement je) {
+                RegenTargetSpec spec = RegenTargetSpec.parse(je);
+                if (spec != null) {
+                    out.add(spec);
+                }
+            } else if (o instanceof Map<?, ?> map) {
+                // Gson がオブジェクトを Map にした場合
+                JsonObject obj = GSON.toJsonTree(map).getAsJsonObject();
+                RegenTargetSpec spec = RegenTargetSpec.parse(obj);
+                if (spec != null) {
+                    out.add(spec);
+                }
+            }
+        }
     }
 
     private static void appendJsonStringArray(JsonObject obj, String key, List<String> out) {
@@ -417,33 +706,9 @@ public final class RegenPresetIo {
         return DimensionRestriction.fromJson(dimStrings, exclusionFlag);
     }
 
-    private static void addBlockSpecs(@Nullable List<String> blocks, List<ResourceLocation> ids, List<TagKey<Block>> tags) {
-        if (blocks == null) {
-            return;
-        }
-        for (String s : blocks) {
-            if (s == null || s.isBlank()) {
-                continue;
-            }
-            String t = s.trim();
-            if (t.startsWith("#")) {
-                String id = t.substring(1);
-                ResourceLocation rl = ResourceLocation.tryParse(id);
-                if (rl != null) {
-                    tags.add(TagKey.create(BLOCK, rl));
-                }
-            } else {
-                ResourceLocation rl = ResourceLocation.tryParse(t);
-                if (rl != null) {
-                    ids.add(rl);
-                }
-            }
-        }
-    }
-
     private static PresetEntryJson presetEntry(long tick, String blockId) {
         PresetEntryJson e = new PresetEntryJson();
-        e.tick = tick;
+        e.entryTick = tick;
         e.targets = List.of(blockId);
         return e;
     }
@@ -515,7 +780,7 @@ public final class RegenPresetIo {
         r.preset = "stripped_log_preset";
         r.entries = new ArrayList<>();
         PresetEntryJson e = new PresetEntryJson();
-        e.tick = 1000L;
+        e.entryTick = 1000L;
         e.naturalRegen = Boolean.FALSE;
         e.targets = List.of("#minecraft:logs");
         r.entries.add(e);
@@ -527,6 +792,14 @@ public final class RegenPresetIo {
         @SerializedName("preset")
         @Nullable
         String preset;
+
+        @SerializedName("global_tick")
+        @Nullable
+        Long globalTick;
+
+        @SerializedName("default_tick")
+        @Nullable
+        Long defaultTick;
 
         @SerializedName("delay_ticks")
         @Nullable
@@ -540,6 +813,10 @@ public final class RegenPresetIo {
 
     @SuppressWarnings("unused")
     private static final class PresetEntryJson {
+        @SerializedName("entry_tick")
+        @Nullable
+        Long entryTick;
+
         @Nullable
         Long tick;
 
@@ -557,11 +834,11 @@ public final class RegenPresetIo {
 
         @SerializedName("targets")
         @Nullable
-        List<String> targets;
+        List<Object> targets;
 
         /** 旧 NeoForge ブートストラップ互換（1.20.1 は targets のみ） */
         @Nullable
-        List<String> blocks;
+        List<Object> blocks;
 
         @SerializedName("natural_regen")
         @Nullable

@@ -25,6 +25,12 @@ side="BOTH"
 [[dependencies.regen_resources]]
 modId="tt_core"
 type="required"
-versionRange="[1.1.1,)"
+versionRange="[1.1.0,)"
 ordering="NONE"
 side="BOTH"
+[[dependencies.regen_resources]]
+modId="jei"
+type="optional"
+versionRange="[19,)"
+ordering="NONE"
+side="CLIENT"

@@ -4,6 +4,7 @@ import com.github.TeThoLaPot.regen_resources.RegenResources;
 import com.github.TeThoLaPot.regen_resources.common.item.BreakStuffItem;
 import com.github.TeThoLaPot.regen_resources.common.item.PresetDummyBlockItem;
 import com.github.TeThoLaPot.regen_resources.common.item.RegenBlockItem;
+import com.github.TeThoLaPot.regen_resources.common.item.SelectStuffItem;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.block.Re_Blocks;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.Item;
@@ -54,6 +55,12 @@ public final class Re_Items {
     public static final DeferredHolder<Item, BreakStuffItem> BREAK_STUFF = ITEMS.register(
             "break_stuff",
             () -> new BreakStuffItem(new Item.Properties().stacksTo(1))
+    );
+
+    /** 選択のオーブ。クリエイティブ専用で再生設定 UI を開く。 */
+    public static final DeferredHolder<Item, SelectStuffItem> SELECT_STUFF = ITEMS.register(
+            "select_stuff",
+            () -> new SelectStuffItem(new Item.Properties().stacksTo(1))
     );
 
     /** 残骸掘りで得る破片（4 個クラフトで残骸 1 に戻す）。 */

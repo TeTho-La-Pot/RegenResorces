@@ -4,6 +4,7 @@ import com.github.TeThoLaPot.regen_resources.common.regen.RegenRuleRegistry;
 import com.github.TeThoLaPot.regen_resources.platform.RegenPlatformServices;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.block.Re_Blocks;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.config.RegenPresetIo;
+import com.github.TeThoLaPot.regen_resources.platform.neoforge.command.RegenSettingsCommands;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.OreHarvesterCompatForgeEvents;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenBlockBreakEvents;
 import com.github.TeThoLaPot.regen_resources.platform.neoforge.event.RegenMiningDelegateForgeEvents;
@@ -42,6 +43,7 @@ public final class RegenResourcesForgeBootstrap {
         Re_Items.ITEMS.register(modEventBus);
         Re_CreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         ReLootModifiers.LOOT_MODIFIER_SERIALIZERS.register(modEventBus);
+        com.github.TeThoLaPot.regen_resources.platform.neoforge.menu.Re_Menus.MENUS.register(modEventBus);
     }
 
     private static void registerGameEvents() {
@@ -52,12 +54,13 @@ public final class RegenResourcesForgeBootstrap {
         NeoForge.EVENT_BUS.register(RegenRegenForgeEvents.class);
         NeoForge.EVENT_BUS.register(RegenResourcesReloadEvents.class);
         NeoForge.EVENT_BUS.register(RegenMassBreakBugWorkaround.class);
+        NeoForge.EVENT_BUS.register(RegenSettingsCommands.class);
     }
 
     /**
-     * COMMON の toml がディスクから読み込まれた後にプリセットを読む。
-     * {@link net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent} では {@link RegenResourcesForgeConfig} の値が
-     * まだファイルと同期していないことがあり、bootstrapVanillaPresetsWhenEmpty や JSON 再生成が効かない原因になる。
+     * COMMON の toml がディスクから読み込まれた／再読込されたあと。
+     * <p>フラグ自体（自然再生など）は NeoForge が {@code config/regen_resources-common.toml} から供給する。
+     * プリセット JSON の再適用はワールドバインド時のみ実体があり、未バインドなら空ルールになる。
      */
     private static void onCommonConfigLoading(ModConfigEvent.Loading event) {
         if (event.getConfig().getSpec() != RegenResourcesForgeConfig.SPEC) {

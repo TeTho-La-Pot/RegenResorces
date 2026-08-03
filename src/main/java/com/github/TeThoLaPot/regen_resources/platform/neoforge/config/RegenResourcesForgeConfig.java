@@ -48,7 +48,7 @@ public final class RegenResourcesForgeConfig {
      */
     public static final ModConfigSpec.BooleanValue BOOTSTRAP_VANILLA_PRESETS_WHEN_EMPTY = BUILDER
             .comment(
-                    "If true, missing built-in preset JSON files under config/RegenResources/RegenPresets/ are created (existing files are never overwritten).",
+                    "If true, missing built-in preset JSON files under <world>/serverconfig/RegenResources/RegenPresets/ are created (existing files are never overwritten).",
                     "If false, no automatic preset files are written.")
             .translation(CFG + "bootstrap_vanilla_presets_when_empty")
             .define("bootstrapVanillaPresetsWhenEmpty", true);
